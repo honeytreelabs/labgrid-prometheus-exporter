@@ -1,37 +1,31 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
-name = "labgrid-prometheus-exporter"
-version = "0.1.0"
-description = "Labgrid Framework Prometheus Exporter"
-readme = "README.md"
-requires-python = ">=3.13"
-license = { text = "MIT" }
-dependencies = [
-    "labgrid>=24.0",
-]
-
-[project.scripts]
-labgrid-prometheus-exporter = "labgrid_prometheus_exporter.cli:main"
+[tool.uv.workspace]
+members = ["packages/*"]
 
 [dependency-groups]
-dev = [
-    "pre-commit>=4.6.1",
-    "pytest>=8.4.0",
-    "pytest-cov>=6.2.0",
-    "ruff>=0.12.0",
-    "ty>=0.0.67",
+dev = ["pre-commit>=4.6.1"]
+
+[tool.uv]
+# package-level `conflicts` (as opposed to conflicting extras of one
+# project) is still preview/experimental in uv; this silences the warning
+# uv prints on every invocation rather than working around it per-command.
+preview-features = ["package-conflicts"]
+conflicts = [
+    [
+        { package = "labgrid-prometheus-exporter-backend-grpc" },
+        { package = "labgrid-prometheus-exporter-backend-wamp" },
+    ],
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/labgrid_prometheus_exporter"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-q"
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+# labgrid ships a pytest11 plugin that pytest autoloads whenever labgrid is
+# installed, regardless of whether it's used. Importing it imports
+# labgrid.remote.client, which on labgrid < 25.0 (the wamp backend) runs
+# `txaio.config.loop = asyncio.get_event_loop()` at module import time --
+# broken on Python >= 3.14, where that raises without a running loop. We
+# don't use labgrid's pytest fixtures, so just disable autoloading it.
+addopts = "-q -p no:labgrid"

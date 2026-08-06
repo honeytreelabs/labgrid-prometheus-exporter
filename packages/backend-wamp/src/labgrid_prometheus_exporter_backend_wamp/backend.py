@@ -20,6 +20,7 @@ def _convert(place: LabgridPlace) -> Place:
         acquired=place.acquired,
         acquired_resources=[str(resource_path) for resource_path in place.acquired_resources],
         changed=place.changed,
+        tags=dict(place.tags),
         reservation=place.reservation,
     )
 
@@ -85,3 +86,6 @@ class WampCoordinatorBackend:
         if self._session is None:
             raise RuntimeError("not connected: call connect() first")
         return {name: _convert(place) for name, place in self._session.places.items()}
+
+    def connected(self) -> bool:
+        return self._session is not None and self._session.is_connected()

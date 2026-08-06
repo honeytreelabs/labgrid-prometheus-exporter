@@ -54,6 +54,35 @@ uv run --no-sync labgrid-prometheus-exporter --coordinator 127.0.0.1:20408   # g
 uv run --no-sync labgrid-prometheus-exporter --crossbar ws://127.0.0.1:20408/ws  # wamp
 ```
 
+## Metrics
+
+Metrics are grouped into tiers, roughly ordered by value versus implementation
+cost. Tier 1 is implemented; tiers 2 and 3 are planned.
+
+- **Tier 1 — utilization and self-health** (implemented):
+  `labgrid_place_acquired`, `labgrid_place_changed_timestamp_seconds`,
+  `labgrid_place_acquired_seconds`, `labgrid_places_acquired_by_user`,
+  `labgrid_place_tag_info`, `labgrid_coordinator_connected`,
+  `labgrid_places_last_update_timestamp_seconds`. Derived entirely from data
+  `Place` already carries, plus the backend's own connection liveness — no
+  further coordinator calls needed. `update_from_places()` diffs each poll
+  against the previous one and removes series for places, tags, and users
+  that dropped out, so released places, edited tags, or deleted places don't
+  linger as stale metrics. This matters most for tags: they're commonly used
+  to gate which places CI may use, so a removed or changed tag needs to
+  actually disappear from `labgrid_place_tag_info`, not linger and keep a
+  detagged place looking eligible.
+- **Tier 2 — turnover** (planned): `labgrid_place_acquire_total` /
+  `labgrid_place_release_total` counters, tracking acquire/release
+  transitions over time rather than just current state. Reuses the same
+  previous-vs-current diffing tier 1 already does.
+- **Tier 3 — resource and reservation detail** (planned): per-resource
+  availability (`labgrid_resource_available`) and reservation queue depth
+  (`labgrid_reservations_pending`, `labgrid_reservation_wait_seconds`).
+  Needs extending `CoordinatorBackend`/`Place` with data they don't expose
+  yet (per-resource `avail` state, `get_reservations`), so held until there's
+  a concrete need place-level metrics don't cover.
+
 ## Development
 
 `make test` and `make type-check` loop over both backend variants, syncing

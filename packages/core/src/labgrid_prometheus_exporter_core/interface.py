@@ -27,6 +27,7 @@ class Place:
     acquired: str | None
     acquired_resources: list[str]
     changed: float
+    tags: dict[str, str]
     reservation: str | None = None
 
 
@@ -50,4 +51,13 @@ class CoordinatorBackend(Protocol):
 
     def places(self) -> dict[str, Place]:
         """Return the current snapshot of all places, keyed by name."""
+        ...
+
+    def connected(self) -> bool:
+        """Whether the connection to the coordinator is currently live.
+
+        places() keeps returning the last-known snapshot even after the
+        connection drops, so callers that care about staleness (e.g. the
+        exporter's self-health metrics) need this separately.
+        """
         ...

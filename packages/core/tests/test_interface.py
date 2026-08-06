@@ -19,6 +19,9 @@ class FakeBackend:
     def places(self) -> dict[str, Place]:
         return {}
 
+    def connected(self) -> bool:
+        return True
+
 
 def test_fake_backend_satisfies_protocol() -> None:
     assert isinstance(FakeBackend(), CoordinatorBackend)

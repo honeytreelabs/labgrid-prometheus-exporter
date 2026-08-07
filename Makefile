@@ -22,10 +22,10 @@ install-python: ## Install Python dependencies for each backend variant
 	done
 
 install-hooks: ## Install pre-commit hooks
-	$(PYTHON) pre-commit install
+	$(PYTHON) --no-sync pre-commit install
 
 pre-commit: ## Run pre-commit hooks on tracked and untracked files
-	$(PYTHON) pre-commit run --files $$(git ls-files --cached --others --exclude-standard)
+	$(PYTHON) --no-sync pre-commit run --files $$(git ls-files --cached --others --exclude-standard)
 
 test: ## Run Python tests for each backend variant
 	@set -e; for backend in $(BACKENDS); do \

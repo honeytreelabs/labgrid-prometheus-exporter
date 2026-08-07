@@ -1,0 +1,59 @@
+# Coordinator + exporter stack for the gRPC backend (labgrid >= 25.0).
+# Not used by `make test` -- see `make test-integration`.
+#
+# Explicit project name: Compose otherwise derives one from the directory
+# name, which can collide with an unrelated Compose stack running from a
+# similarly-named directory elsewhere on the host.
+name: labgrid-prometheus-exporter-integration-grpc
+services:
+  coordinator:
+    build:
+      # Built from labgrid's own source at a pinned tag rather than pulled
+      # from Docker Hub: independent of registry availability/rate limits,
+      # and pinned to the exact revision this backend is tested against.
+      context: "https://github.com/labgrid-project/labgrid.git#v26.0"
+      dockerfile: dockerfiles/Dockerfile
+      target: labgrid-coordinator
+      args:
+        VERSION: "26.0"
+    volumes:
+      - "./tests/integration/fixtures:/home/root/fixtures:ro"
+    # No fixed host port: avoids colliding with anything else already using
+    # 20408 on the host (a real coordinator, another compose project, ...).
+    # conftest.py discovers the actual assigned port via `docker compose port`.
+    ports:
+      - "20408"
+    # Copy the fixture into place before starting, rather than bind-mounting
+    # it directly at the target path: the coordinator persists place state
+    # back to this file, so it must be a writable, container-local copy.
+    command: >
+      bash -c "cp /home/root/fixtures/places.yaml /opt/coordinator/places.yaml &&
+      /usr/local/bin/labgrid-coordinator"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/20408'"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  exporter:
+    build:
+      context: .
+      args:
+        BACKEND: grpc
+    command: ["--coordinator", "coordinator:20408", "--poll-interval", "1"]
+    ports:
+      - "9314"
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:9314/metrics', timeout=2)",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 30

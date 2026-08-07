@@ -1,0 +1,153 @@
+"""Fixtures for docker-compose-based integration tests.
+
+These bring up a real labgrid coordinator and a real
+labgrid-prometheus-exporter container, drive the coordinator via
+`labgrid-client` (already available in whichever backend variant's venv is
+active -- see the Makefile), and scrape the exporter's real HTTP endpoint.
+Requires Docker; not run by `make test`. See `make test-integration`.
+"""
+
+from __future__ import annotations
+
+import os
+import pathlib
+import subprocess
+import sys
+import time
+from collections.abc import Callable, Iterator
+
+import httpx
+import pytest
+from prometheus_client.parser import text_string_to_metric_families
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+VARIANT = os.environ.get("LG_PROMETHEUS_EXPORTER_TEST_VARIANT", "grpc")
+COMPOSE_FILE = ROOT / f"docker-compose.{VARIANT}.yml"
+
+
+def _compose(*args: str) -> None:
+    """Run a docker compose command, streaming its output straight through.
+
+    Deliberately doesn't capture stdout/stderr: `up`/`down`/`build` failures
+    need to be visible directly, not swallowed into an unprinted
+    CompletedProcess. Only the port lookup below needs captured output.
+    """
+    subprocess.run(["docker", "compose", "-f", str(COMPOSE_FILE), *args], cwd=ROOT, check=True)
+
+
+def _published_address(service: str, container_port: int) -> str:
+    """Host address Docker actually bound `service`'s container_port to.
+
+    The compose files don't pin fixed host ports specifically so this never
+    collides with anything else already using 20408/9314 on the host (a real
+    labgrid coordinator, another compose project, etc.) -- Docker picks a
+    free ephemeral port, and we discover it here instead of assuming one.
+    """
+    result = subprocess.run(
+        ["docker", "compose", "-f", str(COMPOSE_FILE), "port", service, str(container_port)],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    host, _, port = result.stdout.strip().rpartition(":")
+    if host in ("", "0.0.0.0", "::"):
+        host = "127.0.0.1"
+    return f"{host}:{port}"
+
+
+@pytest.fixture(scope="session")
+def compose_stack() -> Iterator[dict[str, str]]:
+    """Build and start the coordinator + exporter stack for one test session."""
+    try:
+        _compose("up", "-d", "--build", "--wait")
+        yield {
+            "coordinator": _published_address("coordinator", 20408),
+            "exporter_metrics": _published_address("exporter", 9314),
+        }
+    finally:
+        # In the same try/finally as `up`, not after it: if `up` itself
+        # fails partway (as it can on a port conflict), whatever it did
+        # manage to create must still be torn down, or it leaks and can
+        # cause the exact same conflict on the next run.
+        _compose("down", "-v")
+
+
+_LABGRID_CLIENT_SCRIPT = (
+    # labgrid-client is invoked via `python -c` instead of the console
+    # script directly so we can set an event loop before importing
+    # labgrid.remote.client: on labgrid < 25.0, that module runs
+    # `txaio.config.loop = asyncio.get_event_loop()` at import time, which
+    # raises on Python >= 3.14 with no loop already set for the thread (the
+    # same bug root conftest.py works around for our own test process --
+    # this subprocess is a separate interpreter that fix never reaches).
+    # Harmless no-op for the grpc variant, whose client.py has no such line.
+    "import asyncio, sys; "
+    "asyncio.set_event_loop(asyncio.new_event_loop()); "
+    "from labgrid.remote.client import main; "
+    "sys.exit(main())"
+)
+
+
+@pytest.fixture
+def labgrid_client(compose_stack: dict[str, str]) -> Callable[..., None]:
+    """Run `labgrid-client <args>` against the stack's coordinator."""
+    env = os.environ.copy()
+    if VARIANT == "grpc":
+        env["LG_COORDINATOR"] = compose_stack["coordinator"]
+    else:
+        env["LG_CROSSBAR"] = f"ws://{compose_stack['coordinator']}/ws"
+
+    def run(*args: str) -> None:
+        subprocess.run([sys.executable, "-c", _LABGRID_CLIENT_SCRIPT, *args], env=env, check=True)
+
+    return run
+
+
+@pytest.fixture
+def scrape_metrics(compose_stack: dict[str, str]) -> Callable[[], str]:
+    """Return the exporter's current /metrics text."""
+    url = f"http://{compose_stack['exporter_metrics']}/metrics"
+
+    def get() -> str:
+        return httpx.get(url, timeout=5.0).text
+
+    return get
+
+
+@pytest.fixture
+def metric_value(scrape_metrics: Callable[[], str]) -> Callable[..., float | None]:
+    """Look up a single sample's value by metric name and labels, or None."""
+
+    def get(name: str, **labels: str) -> float | None:
+        for family in text_string_to_metric_families(scrape_metrics()):
+            if family.name != name:
+                continue
+            for sample in family.samples:
+                if all(sample.labels.get(k) == v for k, v in labels.items()):
+                    return sample.value
+        return None
+
+    return get
+
+
+@pytest.fixture
+def wait_until() -> Callable[..., None]:
+    """Poll a predicate until it's true, or raise after a timeout.
+
+    Needed because the exporter only refreshes on its own poll interval
+    (set short via --poll-interval in the compose files), so a change made
+    through labgrid_client isn't visible in scrape_metrics() immediately.
+    """
+
+    def wait(
+        predicate: Callable[[], bool], *, timeout: float = 15.0, interval: float = 0.5
+    ) -> None:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if predicate():
+                return
+            time.sleep(interval)
+        raise AssertionError("condition not met before timeout")
+
+    return wait

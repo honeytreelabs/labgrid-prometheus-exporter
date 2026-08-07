@@ -2,7 +2,10 @@
 members = ["packages/*"]
 
 [dependency-groups]
-dev = ["pre-commit>=4.6.1"]
+# httpx is only used by tests/integration (scraping the exporter's HTTP
+# endpoint); kept here rather than in a package's own dev group since it
+# isn't specific to core/backend-grpc/backend-wamp/meta.
+dev = ["pre-commit>=4.6.1", "httpx>=0.27"]
 
 [tool.uv]
 # package-level `conflicts` (as opposed to conflicting extras of one

@@ -1,0 +1,20 @@
+# Loaded into the coordinator's state directory at container startup (see
+# docker-compose.grpc.yml / docker-compose.wamp.yml). Same schema in both
+# labgrid protocol generations -- Place's fields haven't changed since 24.x.
+#
+# No `matches` entries and no exporter/dut containers: this place exists
+# purely to exercise place-level metrics (acquired, tags, changed), which is
+# all labgrid-prometheus-exporter reads today. Resource-level metrics (tier
+# 3, not yet implemented) would need a real exporter+dut here instead.
+integration-test-place:
+  acquired: null
+  acquired_resources: []
+  aliases: []
+  allowed: []
+  changed: 1700000000.0
+  comment: 'used by tests/integration'
+  created: 1700000000.0
+  matches: []
+  reservation: null
+  tags:
+    usage: ci

@@ -94,6 +94,22 @@ make test
 make type-check
 ```
 
+### Integration tests
+
+`make test-integration` builds and runs a real labgrid coordinator (from
+labgrid's own `dockerfiles/`, pinned to the exact tag each backend is tested
+against — not pulled from a registry) plus a real
+`labgrid-prometheus-exporter` container via Docker Compose
+(`docker-compose.grpc.yml` / `docker-compose.wamp.yml`), then drives it with
+`labgrid-client` and scrapes `/metrics` for real
+(`tests/integration/`). It's slow and needs Docker, so unlike `make test`
+it's **not** run by the pre-commit hook or on every commit — run it
+explicitly, or from CI on a schedule/PR.
+
+```sh
+make test-integration
+```
+
 Build all package artifacts:
 
 ```sh

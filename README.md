@@ -57,7 +57,7 @@ uv run --no-sync labgrid-prometheus-exporter --crossbar ws://127.0.0.1:20408/ws 
 ## Metrics
 
 Metrics are grouped into tiers, roughly ordered by value versus implementation
-cost. Tiers 1 and 2 are implemented; tier 3 is planned.
+cost. All three tiers are implemented.
 
 - **Tier 1 — utilization and self-health** (implemented):
   `labgrid_place_acquired`, `labgrid_place_changed_timestamp_seconds`,
@@ -86,12 +86,30 @@ cost. Tiers 1 and 2 are implemented; tier 3 is planned.
   unrelated to an actual process restart. Same poll-interval granularity
   caveat as everywhere else: an acquire/release cycle faster than the poll
   interval is invisible to these counters too.
-- **Tier 3 — resource and reservation detail** (planned): per-resource
-  availability (`labgrid_resource_available`) and reservation queue depth
-  (`labgrid_reservations_pending`, `labgrid_reservation_wait_seconds`).
-  Needs extending `CoordinatorBackend`/`Place` with data they don't expose
-  yet (per-resource `avail` state, `get_reservations`), so held until there's
-  a concrete need place-level metrics don't cover.
+- **Tier 3 — resource and reservation detail** (implemented):
+  `labgrid_resource_available` (per-resource, labeled by exporter/group/name/cls)
+  and reservation queue depth (`labgrid_reservations_pending`,
+  `labgrid_reservation_wait_seconds`). Resources behave like Tier 1's
+  gauges — labgrid already pushes resource updates the same way it does
+  place updates, so `CoordinatorBackend.resources()` is a cheap sync read
+  with the same diff-based cleanup as everywhere else (removed on
+  disappearance; a resource's `cls` changing is treated as its old
+  identity disappearing and a new one appearing, same as a tag's value
+  changing). Reservations are genuinely different: labgrid never pushes
+  reservation updates on either transport, so
+  `CoordinatorBackend.reservations()` makes a real coordinator call every
+  poll — the one async read-method in an otherwise-sync
+  `CoordinatorBackend`, and the one metric update in `_poll()` wrapped in
+  its own try/except, so a failed reservations fetch can't block
+  place/resource metrics from updating that cycle. Reservation series
+  are unlabeled (a reservation's token is randomly generated per request
+  and unsuitable as a label), and `labgrid_reservation_wait_seconds`
+  reports `0` rather than being absent when nothing is pending, since
+  unlabeled gauges have no absence concept to begin with. Resource
+  availability currently has unit test coverage only — proving it against
+  a real exporter reporting real hardware presence would need bringing
+  back the `exporter`/`dut` containers dropped from the integration setup
+  back in Tier 1 (see `tests/integration/`), which hasn't been done yet.
 
 ## Reconnection
 

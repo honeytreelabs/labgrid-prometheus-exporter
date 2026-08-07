@@ -31,6 +31,41 @@ class Place:
     reservation: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class Resource:
+    """Version-agnostic snapshot of a labgrid resource.
+
+    exporter/group/name are the outer dict keys of
+    labgrid.remote.client.ClientSession.resources, not part of a
+    ResourceEntry's own data; cls and avail come from ResourceEntry itself.
+    Deliberately excludes ResourceEntry's params/extra/acquired -- no
+    current documented need beyond availability.
+    """
+
+    exporter: str
+    group: str
+    name: str
+    cls: str
+    avail: bool
+
+
+@dataclass(frozen=True, slots=True)
+class Reservation:
+    """Version-agnostic snapshot of a labgrid reservation.
+
+    Deliberately excludes labgrid's reservation token: a fresh random
+    10-character string generated per reservation request, unsuitable as a
+    stable identity or Prometheus label (unbounded, ephemeral cardinality).
+    `pending` collapses labgrid's 5-state ReservationState down to the one
+    distinction this project's metrics need (state == waiting), so this
+    module still has zero dependency on labgrid's own types.
+    """
+
+    owner: str
+    created: float
+    pending: bool
+
+
 @runtime_checkable
 class CoordinatorBackend(Protocol):
     """A persistent connection to a labgrid coordinator.
@@ -51,6 +86,24 @@ class CoordinatorBackend(Protocol):
 
     def places(self) -> dict[str, Place]:
         """Return the current snapshot of all places, keyed by name."""
+        ...
+
+    def resources(self) -> list[Resource]:
+        """Return the current snapshot of all resources.
+
+        Like places(), this is a cheap read of already-tracked local
+        state -- labgrid subscribes to resource updates the same way it
+        does for places, no extra network call needed here.
+        """
+        ...
+
+    async def reservations(self) -> list[Reservation]:
+        """Return the current list of reservations.
+
+        Unlike places()/resources(), labgrid never pushes reservation
+        updates -- this makes a real coordinator call every time, which is
+        why it's async and the other two aren't.
+        """
         ...
 
     def connected(self) -> bool:

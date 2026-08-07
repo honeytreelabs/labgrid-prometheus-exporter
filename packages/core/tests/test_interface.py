@@ -6,7 +6,12 @@ to its contract: structural typing (typing.Protocol) is enough.
 
 from __future__ import annotations
 
-from labgrid_prometheus_exporter_core.interface import CoordinatorBackend, Place
+from labgrid_prometheus_exporter_core.interface import (
+    CoordinatorBackend,
+    Place,
+    Reservation,
+    Resource,
+)
 
 
 class FakeBackend:
@@ -18,6 +23,12 @@ class FakeBackend:
 
     def places(self) -> dict[str, Place]:
         return {}
+
+    def resources(self) -> list[Resource]:
+        return []
+
+    async def reservations(self) -> list[Reservation]:
+        return []
 
     def connected(self) -> bool:
         return True

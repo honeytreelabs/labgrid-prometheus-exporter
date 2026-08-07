@@ -6,7 +6,10 @@ import asyncio
 
 from labgrid.remote.client import ClientSession
 from labgrid.remote.common import Place as LabgridPlace
-from labgrid_prometheus_exporter_core.interface import Place
+from labgrid.remote.common import Reservation as LabgridReservation
+from labgrid.remote.common import ReservationState, ResourceEntry
+from labgrid.remote.generated import labgrid_coordinator_pb2
+from labgrid_prometheus_exporter_core.interface import Place, Reservation, Resource
 
 
 def _convert(place: LabgridPlace) -> Place:
@@ -19,6 +22,16 @@ def _convert(place: LabgridPlace) -> Place:
         changed=place.changed,
         tags=dict(place.tags),
         reservation=place.reservation,
+    )
+
+
+def _convert_resource(exporter: str, group: str, name: str, entry: ResourceEntry) -> Resource:
+    return Resource(exporter=exporter, group=group, name=name, cls=entry.cls, avail=entry.avail)
+
+
+def _convert_reservation(res: LabgridReservation) -> Reservation:
+    return Reservation(
+        owner=res.owner, created=res.created, pending=res.state == ReservationState.waiting
     )
 
 
@@ -52,6 +65,23 @@ class GrpcCoordinatorBackend:
         if self._session is None:
             raise RuntimeError("not connected: call connect() first")
         return {name: _convert(place) for name, place in self._session.places.items()}
+
+    def resources(self) -> list[Resource]:
+        if self._session is None:
+            raise RuntimeError("not connected: call connect() first")
+        return [
+            _convert_resource(exporter, group, name, entry)
+            for exporter, groups in self._session.resources.items()
+            for group, entries in groups.items()
+            for name, entry in entries.items()
+        ]
+
+    async def reservations(self) -> list[Reservation]:
+        if self._session is None:
+            raise RuntimeError("not connected: call connect() first")
+        request = labgrid_coordinator_pb2.GetReservationsRequest()
+        response = await self._session.stub.GetReservations(request)
+        return [_convert_reservation(LabgridReservation.from_pb2(r)) for r in response.reservations]
 
     def connected(self) -> bool:
         return self._session is not None and not self._session.stopping.is_set()

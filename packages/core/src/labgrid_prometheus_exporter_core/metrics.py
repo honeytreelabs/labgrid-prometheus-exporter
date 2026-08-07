@@ -6,7 +6,7 @@ import time
 
 from prometheus_client import Counter, Gauge
 
-from labgrid_prometheus_exporter_core.interface import Place
+from labgrid_prometheus_exporter_core.interface import Place, Reservation, Resource
 
 PLACE_ACQUIRED = Gauge(
     "labgrid_place_acquired",
@@ -52,11 +52,25 @@ PLACES_LAST_UPDATE_TIMESTAMP = Gauge(
     "labgrid_places_last_update_timestamp_seconds",
     "Unix timestamp of the last time place metrics were refreshed from the backend",
 )
+RESOURCE_AVAILABLE = Gauge(
+    "labgrid_resource_available",
+    "Whether a labgrid resource is currently available (1) or not (0)",
+    ["exporter", "group", "name", "cls"],
+)
+RESERVATIONS_PENDING = Gauge(
+    "labgrid_reservations_pending",
+    "Number of reservations currently waiting for a place",
+)
+RESERVATION_WAIT_SECONDS = Gauge(
+    "labgrid_reservation_wait_seconds",
+    "How long the oldest pending reservation has been waiting, in seconds. 0 if none are pending.",
+)
 
 _previous_places: set[str] = set()
 _previous_acquired_places: set[str] = set()
 _previous_tags: set[tuple[str, str, str]] = set()
 _previous_users: set[str] = set()
+_previous_resources: set[tuple[str, str, str, str]] = set()
 
 
 def update_from_places(places: dict[str, Place]) -> None:
@@ -117,6 +131,53 @@ def update_from_places(places: dict[str, Place]) -> None:
     _previous_tags.update(current_tags)
     _previous_users.clear()
     _previous_users.update(users)
+
+
+def update_from_resources(resources: list[Resource]) -> None:
+    """Refresh labgrid_resource_available from a fresh snapshot of resources.
+
+    Removes series for resources that have dropped out since the last call
+    (exporter disconnected, resource removed), same reasoning as the place
+    gauges in update_from_places(): availability is current state, not
+    history, so a resource that no longer exists shouldn't keep reporting
+    stale availability.
+
+    The tracked identity is the full (exporter, group, name, cls) tuple,
+    matching all four labelnames, not just the 3-part (exporter, group,
+    name) logical identity -- removing a label series requires every label
+    value, the same reason _previous_tags tracks (place, key, value)
+    triples rather than (place, key) pairs. A resource's cls changing is
+    therefore treated as its old identity disappearing and a new one
+    appearing, exactly like a tag's value changing.
+    """
+    current: set[tuple[str, str, str, str]] = set()
+
+    for r in resources:
+        current.add((r.exporter, r.group, r.name, r.cls))
+        RESOURCE_AVAILABLE.labels(exporter=r.exporter, group=r.group, name=r.name, cls=r.cls).set(
+            1 if r.avail else 0
+        )
+
+    for exporter, group, name, cls in _previous_resources - current:
+        RESOURCE_AVAILABLE.remove(exporter, group, name, cls)
+
+    _previous_resources.clear()
+    _previous_resources.update(current)
+
+
+def update_from_reservations(reservations: list[Reservation]) -> None:
+    """Refresh the reservation queue gauges from a fresh list of reservations.
+
+    Unlike the place/resource gauges, there's no removal step here: these
+    are unlabeled Gauges (a single global value each), and prometheus_client
+    gives unlabeled Gauges a value from process start with no equivalent of
+    .remove() to make them disappear -- so "nothing pending" is represented
+    as 0, not absence.
+    """
+    pending = [r for r in reservations if r.pending]
+
+    RESERVATIONS_PENDING.set(len(pending))
+    RESERVATION_WAIT_SECONDS.set(time.time() - min(r.created for r in pending) if pending else 0)
 
 
 def update_connection_health(connected: bool) -> None:

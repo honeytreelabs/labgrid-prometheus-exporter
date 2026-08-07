@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from labgrid_prometheus_exporter_core.interface import Place
+from labgrid_prometheus_exporter_core.interface import Place, Reservation, Resource
 from labgrid_prometheus_exporter_core.metrics import (
     COORDINATOR_CONNECTED,
     PLACE_ACQUIRE_TOTAL,
@@ -15,8 +15,13 @@ from labgrid_prometheus_exporter_core.metrics import (
     PLACE_TAG_INFO,
     PLACES_ACQUIRED_BY_USER,
     PLACES_LAST_UPDATE_TIMESTAMP,
+    RESERVATION_WAIT_SECONDS,
+    RESERVATIONS_PENDING,
+    RESOURCE_AVAILABLE,
     update_connection_health,
     update_from_places,
+    update_from_reservations,
+    update_from_resources,
 )
 
 
@@ -36,6 +41,23 @@ def _place(
         changed=changed,
         tags=tags or {},
     )
+
+
+def _resource(
+    *,
+    exporter: str = "exp",
+    group: str = "grp",
+    name: str = "res",
+    cls: str = "NetworkPowerPort",
+    avail: bool,
+) -> Resource:
+    return Resource(exporter=exporter, group=group, name=name, cls=cls, avail=avail)
+
+
+def _reservation(
+    *, owner: str = "alice", created: float = 1000.0, pending: bool = True
+) -> Reservation:
+    return Reservation(owner=owner, created=created, pending=pending)
 
 
 def test_update_from_places_sets_gauges() -> None:
@@ -184,6 +206,83 @@ def test_update_from_places_tracks_acquire_total_independently_per_place() -> No
 
     assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-h")._value.get() == 1
     assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-i")._value.get() == 1
+
+
+def test_update_from_resources_sets_availability() -> None:
+    update_from_resources(
+        [
+            _resource(exporter="exp", group="grp", name="avail-res", avail=True),
+            _resource(exporter="exp", group="grp", name="unavail-res", avail=False),
+        ]
+    )
+
+    assert (
+        RESOURCE_AVAILABLE.labels(
+            exporter="exp", group="grp", name="avail-res", cls="NetworkPowerPort"
+        )._value.get()
+        == 1
+    )
+    assert (
+        RESOURCE_AVAILABLE.labels(
+            exporter="exp", group="grp", name="unavail-res", cls="NetworkPowerPort"
+        )._value.get()
+        == 0
+    )
+
+
+def test_update_from_resources_removes_gauge_for_disappeared_resource() -> None:
+    update_from_resources([_resource(exporter="exp", group="grp", name="temp-res", avail=True)])
+    assert ("exp", "grp", "temp-res", "NetworkPowerPort") in RESOURCE_AVAILABLE._metrics
+
+    update_from_resources([])
+
+    assert ("exp", "grp", "temp-res", "NetworkPowerPort") not in RESOURCE_AVAILABLE._metrics
+
+
+def test_update_from_resources_treats_cls_change_as_new_identity() -> None:
+    update_from_resources(
+        [_resource(exporter="exp", group="grp", name="retyped", cls="OldCls", avail=True)]
+    )
+    assert ("exp", "grp", "retyped", "OldCls") in RESOURCE_AVAILABLE._metrics
+
+    update_from_resources(
+        [_resource(exporter="exp", group="grp", name="retyped", cls="NewCls", avail=True)]
+    )
+
+    assert ("exp", "grp", "retyped", "OldCls") not in RESOURCE_AVAILABLE._metrics
+    assert ("exp", "grp", "retyped", "NewCls") in RESOURCE_AVAILABLE._metrics
+
+
+def test_update_from_reservations_counts_pending_and_oldest_wait() -> None:
+    before = time.time()
+    update_from_reservations(
+        [
+            _reservation(owner="alice", created=1000.0, pending=True),
+            _reservation(owner="bob", created=900.0, pending=True),
+        ]
+    )
+
+    assert RESERVATIONS_PENDING._value.get() == 2
+    # Oldest (lowest created) among pending is used, not insertion order.
+    wait = RESERVATION_WAIT_SECONDS._value.get()
+    assert before - 900.0 <= wait < before - 900.0 + 5
+
+
+def test_update_from_reservations_wait_seconds_is_zero_when_none_pending() -> None:
+    update_from_reservations([])
+
+    assert RESERVATIONS_PENDING._value.get() == 0
+    assert RESERVATION_WAIT_SECONDS._value.get() == 0
+
+
+def test_update_from_reservations_excludes_non_pending() -> None:
+    update_from_reservations(
+        [
+            _reservation(owner="alice", created=1000.0, pending=False),
+        ]
+    )
+
+    assert RESERVATIONS_PENDING._value.get() == 0
 
 
 def test_update_connection_health_sets_gauges() -> None:

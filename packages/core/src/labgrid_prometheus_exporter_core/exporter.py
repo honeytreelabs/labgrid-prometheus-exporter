@@ -8,7 +8,12 @@ import logging
 from prometheus_client import start_http_server
 
 from labgrid_prometheus_exporter_core.interface import CoordinatorBackend
-from labgrid_prometheus_exporter_core.metrics import update_connection_health, update_from_places
+from labgrid_prometheus_exporter_core.metrics import (
+    update_connection_health,
+    update_from_places,
+    update_from_reservations,
+    update_from_resources,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +54,14 @@ async def _poll(backend: CoordinatorBackend) -> None:
             logger.warning("reconnected to coordinator")
 
     update_from_places(backend.places())
+    update_from_resources(backend.resources())
+    try:
+        update_from_reservations(await backend.reservations())
+    except Exception:
+        # A real, independent network call (unlike places()/resources(),
+        # which just read already-tracked local state) -- one failure here
+        # shouldn't prevent place/resource metrics from updating this cycle.
+        logger.exception("failed to fetch reservations, will retry next poll")
     update_connection_health(backend.connected())
 
 

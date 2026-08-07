@@ -9,8 +9,11 @@ import txaio
 from autobahn.asyncio.wamp import ApplicationRunner
 from labgrid.remote.client import ClientSession
 from labgrid.remote.common import Place as LabgridPlace
+from labgrid.remote.common import Reservation as LabgridReservation
+from labgrid.remote.common import ReservationState, ResourceEntry
+from labgrid.util import filter_dict
 from labgrid.util.proxy import proxymanager
-from labgrid_prometheus_exporter_core.interface import Place
+from labgrid_prometheus_exporter_core.interface import Place, Reservation, Resource
 
 
 def _convert(place: LabgridPlace) -> Place:
@@ -23,6 +26,16 @@ def _convert(place: LabgridPlace) -> Place:
         changed=place.changed,
         tags=dict(place.tags),
         reservation=place.reservation,
+    )
+
+
+def _convert_resource(exporter: str, group: str, name: str, entry: ResourceEntry) -> Resource:
+    return Resource(exporter=exporter, group=group, name=name, cls=entry.cls, avail=entry.avail)
+
+
+def _convert_reservation(res: LabgridReservation) -> Reservation:
+    return Reservation(
+        owner=res.owner, created=res.created, pending=res.state == ReservationState.waiting
     )
 
 
@@ -107,6 +120,31 @@ class WampCoordinatorBackend:
         if self._session is None:
             raise RuntimeError("not connected: call connect() first")
         return {name: _convert(place) for name, place in self._session.places.items()}
+
+    def resources(self) -> list[Resource]:
+        if self._session is None:
+            raise RuntimeError("not connected: call connect() first")
+        return [
+            _convert_resource(exporter, group, name, entry)
+            for exporter, groups in self._session.resources.items()
+            for group, entries in groups.items()
+            for name, entry in entries.items()
+        ]
+
+    async def reservations(self) -> list[Reservation]:
+        if self._session is None:
+            raise RuntimeError("not connected: call connect() first")
+        # No push subscription for reservations in labgrid's WAMP protocol
+        # (unlike places/resources) -- this is a real RPC every call.
+        raw = await self._session.call("org.labgrid.coordinator.get_reservations")
+        reservations = []
+        for token, config in raw.items():
+            kwargs = filter_dict(config, LabgridReservation, warn=False)
+            # ty doesn't resolve __init__ for labgrid's legacy @attr.s-style
+            # Reservation (same gap as ClientSession/txaio.config.loop above).
+            res = LabgridReservation(token=token, **kwargs)  # ty: ignore[unknown-argument]
+            reservations.append(_convert_reservation(res))
+        return reservations
 
     def connected(self) -> bool:
         return self._session is not None and self._session.is_connected()

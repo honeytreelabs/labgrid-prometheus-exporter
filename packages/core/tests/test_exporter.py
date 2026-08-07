@@ -13,7 +13,7 @@ import logging
 
 import pytest
 from labgrid_prometheus_exporter_core.exporter import _poll
-from labgrid_prometheus_exporter_core.interface import Place
+from labgrid_prometheus_exporter_core.interface import Place, Reservation, Resource
 from labgrid_prometheus_exporter_core.metrics import COORDINATOR_CONNECTED, PLACE_ACQUIRED
 
 
@@ -49,6 +49,12 @@ class _FakeBackend:
 
     def places(self) -> dict[str, Place]:
         return self._places
+
+    def resources(self) -> list[Resource]:
+        return []
+
+    async def reservations(self) -> list[Reservation]:
+        return []
 
     def connected(self) -> bool:
         return self._connected

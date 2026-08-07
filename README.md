@@ -57,7 +57,7 @@ uv run --no-sync labgrid-prometheus-exporter --crossbar ws://127.0.0.1:20408/ws 
 ## Metrics
 
 Metrics are grouped into tiers, roughly ordered by value versus implementation
-cost. Tier 1 is implemented; tiers 2 and 3 are planned.
+cost. Tiers 1 and 2 are implemented; tier 3 is planned.
 
 - **Tier 1 — utilization and self-health** (implemented):
   `labgrid_place_acquired`, `labgrid_place_changed_timestamp_seconds`,
@@ -72,10 +72,20 @@ cost. Tier 1 is implemented; tiers 2 and 3 are planned.
   to gate which places CI may use, so a removed or changed tag needs to
   actually disappear from `labgrid_place_tag_info`, not linger and keep a
   detagged place looking eligible.
-- **Tier 2 — turnover** (planned): `labgrid_place_acquire_total` /
+- **Tier 2 — turnover** (implemented): `labgrid_place_acquire_total` /
   `labgrid_place_release_total` counters, tracking acquire/release
-  transitions over time rather than just current state. Reuses the same
-  previous-vs-current diffing tier 1 already does.
+  transitions over time rather than just current state — Tier 1's gauges
+  only answer "what's true right now," not "is this place churning
+  constantly or basically idle." Reuses the same previous-vs-current
+  diffing Tier 1 already does (`_previous_acquired_places`). A place
+  deleted while acquired is not counted as a release — that's a removal,
+  not a release, and conflating them would misrepresent actual usage
+  turnover. Unlike the Tier 1 gauges, these counters are *not* removed
+  when a place is deleted: they represent historical totals rather than
+  current state, and clearing them would fabricate a counter reset
+  unrelated to an actual process restart. Same poll-interval granularity
+  caveat as everywhere else: an acquire/release cycle faster than the poll
+  interval is invisible to these counters too.
 - **Tier 3 — resource and reservation detail** (planned): per-resource
   availability (`labgrid_resource_available`) and reservation queue depth
   (`labgrid_reservations_pending`, `labgrid_reservation_wait_seconds`).

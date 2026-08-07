@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from prometheus_client import Gauge
+from prometheus_client import Counter, Gauge
 
 from labgrid_prometheus_exporter_core.interface import Place
 
@@ -21,6 +21,17 @@ PLACE_CHANGED_TIMESTAMP = Gauge(
 PLACE_ACQUIRED_SECONDS = Gauge(
     "labgrid_place_acquired_seconds",
     "How long a place has been continuously acquired. Absent while the place is free.",
+    ["place"],
+)
+PLACE_ACQUIRE_TOTAL = Counter(
+    "labgrid_place_acquire_total",
+    "Total number of times a place has transitioned from free to acquired",
+    ["place"],
+)
+PLACE_RELEASE_TOTAL = Counter(
+    "labgrid_place_release_total",
+    "Total number of times a place has transitioned from acquired to free. "
+    "A place being deleted while acquired does not count as a release.",
     ["place"],
 )
 PLACES_ACQUIRED_BY_USER = Gauge(
@@ -78,6 +89,15 @@ def update_from_places(places: dict[str, Place]) -> None:
 
     for user, count in users.items():
         PLACES_ACQUIRED_BY_USER.labels(user=user).set(count)
+
+    # Deliberately not included in the cleanup loops below: these represent
+    # historical totals, not current state, so unlike the gauges they are
+    # not removed when a place is deleted (see PLACE_RELEASE_TOTAL's help
+    # text for why a deletion isn't counted as a release either).
+    for name in current_acquired_places - _previous_acquired_places:
+        PLACE_ACQUIRE_TOTAL.labels(place=name).inc()
+    for name in (_previous_acquired_places - current_acquired_places) & current_places:
+        PLACE_RELEASE_TOTAL.labels(place=name).inc()
 
     for name in _previous_places - current_places:
         PLACE_ACQUIRED.remove(name)

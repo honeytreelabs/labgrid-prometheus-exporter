@@ -7,9 +7,11 @@ import time
 from labgrid_prometheus_exporter_core.interface import Place
 from labgrid_prometheus_exporter_core.metrics import (
     COORDINATOR_CONNECTED,
+    PLACE_ACQUIRE_TOTAL,
     PLACE_ACQUIRED,
     PLACE_ACQUIRED_SECONDS,
     PLACE_CHANGED_TIMESTAMP,
+    PLACE_RELEASE_TOTAL,
     PLACE_TAG_INFO,
     PLACES_ACQUIRED_BY_USER,
     PLACES_LAST_UPDATE_TIMESTAMP,
@@ -112,6 +114,76 @@ def test_update_from_places_counts_places_acquired_by_user() -> None:
     update_from_places({"a": _place(name="a", acquired=None), "c": _place(name="c", acquired=None)})
 
     assert ("bob",) not in PLACES_ACQUIRED_BY_USER._metrics
+
+
+def test_update_from_places_counts_acquire_transition() -> None:
+    update_from_places({"turnover-a": _place(name="turnover-a", acquired="host/user")})
+
+    assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-a")._value.get() == 1
+    assert ("turnover-a",) not in PLACE_RELEASE_TOTAL._metrics
+
+
+def test_update_from_places_does_not_double_count_steady_state() -> None:
+    place = _place(name="turnover-b", acquired="host/user")
+    update_from_places({"turnover-b": place})
+    update_from_places({"turnover-b": place})
+
+    assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-b")._value.get() == 1
+
+
+def test_update_from_places_counts_release_transition() -> None:
+    update_from_places({"turnover-c": _place(name="turnover-c", acquired="host/user")})
+    update_from_places({"turnover-c": _place(name="turnover-c", acquired=None)})
+
+    assert PLACE_RELEASE_TOTAL.labels(place="turnover-c")._value.get() == 1
+
+
+def test_update_from_places_never_acquired_place_has_no_release_total() -> None:
+    update_from_places({"turnover-d": _place(name="turnover-d", acquired=None)})
+
+    assert ("turnover-d",) not in PLACE_RELEASE_TOTAL._metrics
+
+
+def test_update_from_places_accumulates_across_multiple_cycles() -> None:
+    acquired = _place(name="turnover-e", acquired="host/user")
+    released = _place(name="turnover-e", acquired=None)
+
+    update_from_places({"turnover-e": acquired})
+    update_from_places({"turnover-e": released})
+    update_from_places({"turnover-e": acquired})
+    update_from_places({"turnover-e": released})
+
+    assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-e")._value.get() == 2
+    assert PLACE_RELEASE_TOTAL.labels(place="turnover-e")._value.get() == 2
+
+
+def test_update_from_places_deletion_while_acquired_is_not_a_release() -> None:
+    update_from_places({"turnover-f": _place(name="turnover-f", acquired="host/user")})
+
+    update_from_places({})
+
+    assert ("turnover-f",) not in PLACE_RELEASE_TOTAL._metrics
+
+
+def test_update_from_places_acquire_total_survives_place_deletion() -> None:
+    update_from_places({"turnover-g": _place(name="turnover-g", acquired="host/user")})
+    assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-g")._value.get() == 1
+
+    update_from_places({})
+
+    assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-g")._value.get() == 1
+
+
+def test_update_from_places_tracks_acquire_total_independently_per_place() -> None:
+    update_from_places(
+        {
+            "turnover-h": _place(name="turnover-h", acquired="host/user"),
+            "turnover-i": _place(name="turnover-i", acquired="host/user"),
+        }
+    )
+
+    assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-h")._value.get() == 1
+    assert PLACE_ACQUIRE_TOTAL.labels(place="turnover-i")._value.get() == 1
 
 
 def test_update_connection_health_sets_gauges() -> None:

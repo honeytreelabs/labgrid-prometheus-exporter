@@ -83,6 +83,26 @@ cost. Tier 1 is implemented; tiers 2 and 3 are planned.
   yet (per-resource `avail` state, `get_reservations`), so held until there's
   a concrete need place-level metrics don't cover.
 
+## Reconnection
+
+Neither labgrid transport's `ClientSession` reconnects on its own once its
+connection to the coordinator drops (a coordinator restart during a
+deployment, a network blip, ...) — that's expected for labgrid's own
+tooling, which is one-shot and short-lived, but not acceptable for an
+exporter meant to run unattended for a long time. So the exporter's poll
+loop detects the drop itself and retries `connect()` on its own regular
+poll interval — no separate backoff schedule, no manual restart needed.
+
+Two things follow operationally: `labgrid_coordinator_connected` drops to
+`0` for the duration of an outage, so alert on that (and on
+`labgrid_places_last_update_timestamp_seconds` going stale) rather than
+assuming metrics are always fresh. And place-level metrics
+(`labgrid_place_acquired`, `labgrid_place_tag_info`, ...) intentionally
+keep reporting their last-known values throughout the outage instead of
+being cleared — a brief disconnect isn't the same as those places actually
+being released or untagged, and clearing them would be actively misleading
+to anything (dashboards, CI gating) reading those metrics.
+
 ## Development
 
 `make test` and `make type-check` loop over both backend variants, syncing

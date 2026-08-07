@@ -73,6 +73,23 @@ def compose_stack() -> Iterator[dict[str, str]]:
         _compose("down", "-v")
 
 
+@pytest.fixture
+def restart_coordinator(compose_stack: dict[str, str]) -> Callable[[], None]:
+    """Restart just the coordinator container, simulating an outage.
+
+    Leaves the exporter container running throughout -- this is meant to
+    exercise the exporter's own reconnect logic, not Compose restarting it
+    for us. A coordinator process restart and a network partition look
+    identical from the exporter's side (connection drops, then becomes
+    reachable again), so this one mechanism covers both.
+    """
+
+    def restart() -> None:
+        _compose("restart", "coordinator")
+
+    return restart
+
+
 _LABGRID_CLIENT_SCRIPT = (
     # labgrid-client is invoked via `python -c` instead of the console
     # script directly so we can set an event loop before importing
@@ -91,14 +108,24 @@ _LABGRID_CLIENT_SCRIPT = (
 
 @pytest.fixture
 def labgrid_client(compose_stack: dict[str, str]) -> Callable[..., None]:
-    """Run `labgrid-client <args>` against the stack's coordinator."""
-    env = os.environ.copy()
-    if VARIANT == "grpc":
-        env["LG_COORDINATOR"] = compose_stack["coordinator"]
-    else:
-        env["LG_CROSSBAR"] = f"ws://{compose_stack['coordinator']}/ws"
+    """Run `labgrid-client <args>` against the stack's coordinator.
+
+    compose_stack is still a required dependency (ensures the stack is up
+    before this runs), but its cached "coordinator" address is deliberately
+    not used here: it's captured once, when this fixture is first set up,
+    and a mid-test restart_coordinator() call can happen after that --
+    reusing a stale address is exactly what broke the reconnect test.
+    Re-resolving on every call is cheap and removes the assumption
+    entirely, regardless of whether the address actually changes underneath.
+    """
 
     def run(*args: str) -> None:
+        address = _published_address("coordinator", 20408)
+        env = os.environ.copy()
+        if VARIANT == "grpc":
+            env["LG_COORDINATOR"] = address
+        else:
+            env["LG_CROSSBAR"] = f"ws://{address}/ws"
         subprocess.run([sys.executable, "-c", _LABGRID_CLIENT_SCRIPT, *args], env=env, check=True)
 
     return run

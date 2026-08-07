@@ -13,6 +13,45 @@ from labgrid_prometheus_exporter_core.metrics import update_connection_health, u
 logger = logging.getLogger(__name__)
 
 
+async def _poll(backend: CoordinatorBackend) -> None:
+    """Reconnect if the connection dropped, then refresh metrics.
+
+    Neither labgrid transport's ClientSession reconnects on its own after a
+    connection drops (coordinator restart, network blip, ...) -- once the
+    underlying stream/session dies, it's done for good. Reconnection is this
+    exporter's responsibility, not something inherited from labgrid.
+
+    On a failed reconnect attempt, deliberately skips update_from_places():
+    a freshly (re)constructed session's places() is empty until it finishes
+    an initial sync, and feeding that through would make the diff-based
+    cleanup in update_from_places() wipe every place's metrics just because
+    the coordinator is briefly unreachable. update_connection_health() still
+    runs either way, so staleness stays visible and the poll loop's own
+    liveness stays visible even while the coordinator is down.
+    """
+    if not backend.connected():
+        logger.warning("lost connection to coordinator, reconnecting")
+        await backend.close()
+        try:
+            await backend.connect()
+        except Exception:
+            logger.exception("reconnect failed, will retry next poll")
+            update_connection_health(False)
+            return
+        else:
+            # Without this, a successful reconnect is silent: logs would
+            # show "lost connection... reconnecting" and then nothing,
+            # which is genuinely ambiguous between "it recovered" and "it's
+            # stuck" -- exactly the gap that made a real transient DNS
+            # resolution failure (Docker's embedded DNS briefly not
+            # resolving the coordinator hostname right after a container
+            # restart) hard to distinguish from a hang while debugging this.
+            logger.warning("reconnected to coordinator")
+
+    update_from_places(backend.places())
+    update_connection_health(backend.connected())
+
+
 async def run(backend: CoordinatorBackend, *, http_port: int, poll_interval: float) -> None:
     """Connect the backend, serve metrics, and refresh them until cancelled."""
     await backend.connect()
@@ -20,8 +59,7 @@ async def run(backend: CoordinatorBackend, *, http_port: int, poll_interval: flo
         start_http_server(http_port)
         logger.info("serving metrics on :%d, polling every %.1fs", http_port, poll_interval)
         while True:
-            update_from_places(backend.places())
-            update_connection_health(backend.connected())
+            await _poll(backend)
             await asyncio.sleep(poll_interval)
     finally:
         await backend.close()

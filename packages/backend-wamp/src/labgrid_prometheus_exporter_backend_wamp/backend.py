@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+import txaio
 from autobahn.asyncio.wamp import ApplicationRunner
 from labgrid.remote.client import ClientSession
 from labgrid.remote.common import Place as LabgridPlace
@@ -46,6 +47,17 @@ class WampCoordinatorBackend:
 
     async def connect(self) -> None:
         loop = asyncio.get_running_loop()
+        # labgrid.remote.client sets txaio.config.loop = asyncio.get_event_loop()
+        # at *import* time, before our own asyncio.run() has created the loop
+        # this coroutine actually runs on -- get_event_loop() at that point
+        # creates and returns a throwaway loop that's never driven. Autobahn
+        # schedules its internal timers (connection timeouts, WAMP ping/pong
+        # keepalive, ...) via txaio.call_later(), which uses txaio.config.loop
+        # directly -- pinned to the dead loop, those callbacks silently never
+        # fire. Re-pointing it at the loop that's actually running fixes that
+        # for both the first connect() and every reconnect after it, since
+        # this process only ever runs one asyncio.run() for its whole life.
+        txaio.config.loop = loop  # ty: ignore[unresolved-attribute]
         ready = asyncio.Event()
 
         async def connected(session: ClientSession) -> None:
@@ -70,7 +82,16 @@ class WampCoordinatorBackend:
         if protocol.is_open in pending:
             raise RuntimeError("connection timed out during setup")
 
-        await ready.wait()
+        # labgrid.remote.client.start_session() (which this mirrors) awaits
+        # `ready` with no timeout at all. Low-stakes for a one-shot CLI
+        # command someone would just Ctrl-C, but this exporter awaits
+        # connect() from an unattended reconnect loop -- if the WAMP-level
+        # session handshake never completes after the transport opens
+        # (plausible right after a coordinator restart, if crossbar accepts
+        # the connection before its WAMP router is fully up), this would
+        # otherwise hang forever and silently wedge the whole process, not
+        # just this one reconnect attempt.
+        await asyncio.wait_for(ready.wait(), timeout=30)
         self._session = session_holder[0]
         self._protocol = protocol
 

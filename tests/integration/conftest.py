@@ -144,13 +144,25 @@ def scrape_metrics(compose_stack: dict[str, str]) -> Callable[[], str]:
 
 @pytest.fixture
 def metric_value(scrape_metrics: Callable[[], str]) -> Callable[..., float | None]:
-    """Look up a single sample's value by metric name and labels, or None."""
+    """Look up a single sample's value by metric name and labels, or None.
+
+    Matches on each sample's own name, not the family's -- for a Counter,
+    prometheus_client's parser groups the _total and _created series under
+    one family whose .name has the _total suffix stripped (e.g. family.name
+    "labgrid_place_acquire" for the sample named
+    "labgrid_place_acquire_total"). Matching on family.name instead of
+    sample.name meant this could never find a Counter by its real exposed
+    name, silently returning None regardless of the actual value -- worked
+    fine for Gauges (family.name == sample.name there) and was invisible in
+    a manual `curl | grep`, since grep matches the raw line text, not this
+    parsed family/sample structure.
+    """
 
     def get(name: str, **labels: str) -> float | None:
         for family in text_string_to_metric_families(scrape_metrics()):
-            if family.name != name:
-                continue
             for sample in family.samples:
+                if sample.name != name:
+                    continue
                 if all(sample.labels.get(k) == v for k, v in labels.items()):
                     return sample.value
         return None

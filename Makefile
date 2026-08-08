@@ -40,7 +40,7 @@ test-integration: ## Run Docker-based integration tests for each backend variant
 		echo "--- integration-testing $$backend backend ---"; \
 		uv sync --package labgrid-prometheus-exporter-core --package labgrid-prometheus-exporter \
 			--package labgrid-prometheus-exporter-backend-$$backend; \
-		LG_PROMETHEUS_EXPORTER_TEST_VARIANT=$$backend uv run --no-sync pytest tests/integration; \
+		LG_PROMETHEUS_EXPORTER_TEST_VARIANT=$$backend uv run --no-sync pytest -vv tests/integration; \
 	done
 
 ## ruff is pure static analysis (no imports resolved against installed

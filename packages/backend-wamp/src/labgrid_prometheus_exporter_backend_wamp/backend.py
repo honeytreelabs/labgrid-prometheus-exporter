@@ -29,8 +29,12 @@ def _convert(place: LabgridPlace) -> Place:
     )
 
 
-def _convert_resource(exporter: str, group: str, name: str, entry: ResourceEntry) -> Resource:
-    return Resource(exporter=exporter, group=group, name=name, cls=entry.cls, avail=entry.avail)
+def _convert_resource(
+    labgrid_exporter: str, group: str, name: str, entry: ResourceEntry
+) -> Resource:
+    return Resource(
+        labgrid_exporter=labgrid_exporter, group=group, name=name, cls=entry.cls, avail=entry.avail
+    )
 
 
 def _convert_reservation(res: LabgridReservation) -> Reservation:
@@ -125,8 +129,8 @@ class WampCoordinatorBackend:
         if self._session is None:
             raise RuntimeError("not connected: call connect() first")
         return [
-            _convert_resource(exporter, group, name, entry)
-            for exporter, groups in self._session.resources.items()
+            _convert_resource(labgrid_exporter, group, name, entry)
+            for labgrid_exporter, groups in self._session.resources.items()
             for group, entries in groups.items()
             for name, entry in entries.items()
         ]

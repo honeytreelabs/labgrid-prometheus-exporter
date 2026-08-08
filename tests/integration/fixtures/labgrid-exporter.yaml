@@ -1,13 +1,15 @@
-## Resource config for a real labgrid-exporter container (see the
+## Resource config for a real labgrid exporter container (see the
 ## labgrid-exporter service in docker-compose.grpc.yml/docker-compose.wamp.yml),
-## used to prove labgrid_resource_available against a real exporter process.
+## used to prove labgrid_resource_available against a real labgrid exporter
+## process.
 ##
 ## NetworkService is a plain labgrid.resource.common.Resource whose exporter
 ## wrapper (NetworkServiceExport) never overrides _start/_stop -- avail goes
-## true the moment the exporter registers it with the coordinator, regardless
-## of whether anything is listening at address:port. This is labgrid's own
-## reference choice for exactly this scenario (dockerfiles/staging/exporter-conf/exporter.yaml),
-## and deliberately means no dut container is needed here.
+## true the moment the labgrid exporter registers it with the coordinator,
+## regardless of whether anything is listening at address:port. This is
+## labgrid's own reference choice for exactly this scenario
+## (dockerfiles/staging/exporter-conf/exporter.yaml), and deliberately means
+## no dut container is needed here.
 ##
 ## Note: this file is rendered through Jinja2 before being parsed as YAML
 ## (labgrid.remote.config.ResourceConfig), with line_statement_prefix="#"

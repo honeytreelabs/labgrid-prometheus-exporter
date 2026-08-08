@@ -3,7 +3,8 @@
 These bring up a real labgrid coordinator and a real
 labgrid-prometheus-exporter container, drive the coordinator via
 `labgrid-client` (already available in whichever backend variant's venv is
-active -- see the Makefile), and scrape the exporter's real HTTP endpoint.
+active -- see the Makefile), and scrape this Prometheus exporter's real
+HTTP endpoint.
 Requires Docker; not run by `make test`. See `make test-integration`.
 """
 
@@ -58,12 +59,12 @@ def _published_address(service: str, container_port: int) -> str:
 
 @pytest.fixture(scope="session")
 def compose_stack() -> Iterator[dict[str, str]]:
-    """Build and start the coordinator + exporter stack for one test session."""
+    """Build and start the coordinator + Prometheus exporter stack for one test session."""
     try:
         _compose("up", "-d", "--build", "--wait")
         yield {
             "coordinator": _published_address("coordinator", 20408),
-            "exporter_metrics": _published_address("exporter", 9314),
+            "prometheus_exporter_metrics": _published_address("prometheus-exporter", 9314),
         }
     finally:
         # In the same try/finally as `up`, not after it: if `up` itself
@@ -77,11 +78,11 @@ def compose_stack() -> Iterator[dict[str, str]]:
 def restart_coordinator(compose_stack: dict[str, str]) -> Callable[[], None]:
     """Restart just the coordinator container, simulating an outage.
 
-    Leaves the exporter container running throughout -- this is meant to
-    exercise the exporter's own reconnect logic, not Compose restarting it
-    for us. A coordinator process restart and a network partition look
-    identical from the exporter's side (connection drops, then becomes
-    reachable again), so this one mechanism covers both.
+    Leaves the Prometheus exporter container running throughout -- this is
+    meant to exercise its own reconnect logic, not Compose restarting it for
+    us. A coordinator process restart and a network partition look
+    identical from the Prometheus exporter's side (connection drops, then
+    becomes reachable again), so this one mechanism covers both.
     """
 
     def restart() -> None:
@@ -94,10 +95,10 @@ def restart_coordinator(compose_stack: dict[str, str]) -> Callable[[], None]:
 def restart_labgrid_exporter(compose_stack: dict[str, str]) -> Callable[[], None]:
     """Restart the labgrid-exporter container, forcing a fresh registration.
 
-    Needed because labgrid-exporter -- unlike this project's own exporter --
-    is unmodified upstream labgrid code with no reconnect logic of its own:
-    confirmed via `docker compose logs labgrid-exporter` that after a
-    coordinator restart it logs "coordinator became unavailable: Cancelling
+    Needed because labgrid-exporter -- unlike this project's own Prometheus
+    exporter -- is unmodified upstream labgrid code with no reconnect logic
+    of its own: confirmed via `docker compose logs labgrid-exporter` that
+    after a coordinator restart it logs "coordinator became unavailable: Cancelling
     all calls" and never reconnects, permanently orphaning its resource
     registration. Since compose_stack is session-scoped and shared with
     test_reconnect.py (which restarts the coordinator), test_resources.py
@@ -154,8 +155,8 @@ def labgrid_client(compose_stack: dict[str, str]) -> Callable[..., None]:
 
 @pytest.fixture
 def scrape_metrics(compose_stack: dict[str, str]) -> Callable[[], str]:
-    """Return the exporter's current /metrics text."""
-    url = f"http://{compose_stack['exporter_metrics']}/metrics"
+    """Return this Prometheus exporter's current /metrics text."""
+    url = f"http://{compose_stack['prometheus_exporter_metrics']}/metrics"
 
     def get() -> str:
         return httpx.get(url, timeout=5.0).text
@@ -195,9 +196,10 @@ def metric_value(scrape_metrics: Callable[[], str]) -> Callable[..., float | Non
 def wait_until() -> Callable[..., None]:
     """Poll a predicate until it's true, or raise after a timeout.
 
-    Needed because the exporter only refreshes on its own poll interval
-    (set short via --poll-interval in the compose files), so a change made
-    through labgrid_client isn't visible in scrape_metrics() immediately.
+    Needed because this Prometheus exporter only refreshes on its own poll
+    interval (set short via --poll-interval in the compose files), so a
+    change made through labgrid_client isn't visible in scrape_metrics()
+    immediately.
     """
 
     def wait(

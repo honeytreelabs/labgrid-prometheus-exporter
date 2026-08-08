@@ -46,7 +46,7 @@ PLACE_TAG_INFO = Gauge(
 )
 COORDINATOR_CONNECTED = Gauge(
     "labgrid_coordinator_connected",
-    "Whether the exporter's connection to the labgrid coordinator is currently live",
+    "Whether this Prometheus exporter's connection to the labgrid coordinator is currently live",
 )
 PLACES_LAST_UPDATE_TIMESTAMP = Gauge(
     "labgrid_places_last_update_timestamp_seconds",
@@ -54,8 +54,10 @@ PLACES_LAST_UPDATE_TIMESTAMP = Gauge(
 )
 RESOURCE_AVAILABLE = Gauge(
     "labgrid_resource_available",
-    "Whether a labgrid resource is currently available (1) or not (0)",
-    ["exporter", "group", "name", "cls"],
+    "Whether a labgrid resource is currently available (1) or not (0). "
+    "The labgrid_exporter label identifies the upstream labgrid exporter "
+    "process that registered the resource, not this Prometheus exporter.",
+    ["labgrid_exporter", "group", "name", "cls"],
 )
 RESERVATIONS_PENDING = Gauge(
     "labgrid_reservations_pending",
@@ -137,29 +139,30 @@ def update_from_resources(resources: list[Resource]) -> None:
     """Refresh labgrid_resource_available from a fresh snapshot of resources.
 
     Removes series for resources that have dropped out since the last call
-    (exporter disconnected, resource removed), same reasoning as the place
-    gauges in update_from_places(): availability is current state, not
+    (labgrid exporter disconnected, resource removed), same reasoning as the
+    place gauges in update_from_places(): availability is current state, not
     history, so a resource that no longer exists shouldn't keep reporting
     stale availability.
 
-    The tracked identity is the full (exporter, group, name, cls) tuple,
-    matching all four labelnames, not just the 3-part (exporter, group,
-    name) logical identity -- removing a label series requires every label
-    value, the same reason _previous_tags tracks (place, key, value)
-    triples rather than (place, key) pairs. A resource's cls changing is
-    therefore treated as its old identity disappearing and a new one
-    appearing, exactly like a tag's value changing.
+    The tracked identity is the full (labgrid_exporter, group, name, cls)
+    tuple, matching all four labelnames, not just the 3-part
+    (labgrid_exporter, group, name) logical identity -- removing a label
+    series requires every label value, the same reason _previous_tags
+    tracks (place, key, value) triples rather than (place, key) pairs. A
+    resource's cls changing is therefore treated as its old identity
+    disappearing and a new one appearing, exactly like a tag's value
+    changing.
     """
     current: set[tuple[str, str, str, str]] = set()
 
     for r in resources:
-        current.add((r.exporter, r.group, r.name, r.cls))
-        RESOURCE_AVAILABLE.labels(exporter=r.exporter, group=r.group, name=r.name, cls=r.cls).set(
-            1 if r.avail else 0
-        )
+        current.add((r.labgrid_exporter, r.group, r.name, r.cls))
+        RESOURCE_AVAILABLE.labels(
+            labgrid_exporter=r.labgrid_exporter, group=r.group, name=r.name, cls=r.cls
+        ).set(1 if r.avail else 0)
 
-    for exporter, group, name, cls in _previous_resources - current:
-        RESOURCE_AVAILABLE.remove(exporter, group, name, cls)
+    for labgrid_exporter, group, name, cls in _previous_resources - current:
+        RESOURCE_AVAILABLE.remove(labgrid_exporter, group, name, cls)
 
     _previous_resources.clear()
     _previous_resources.update(current)

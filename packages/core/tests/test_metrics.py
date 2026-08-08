@@ -45,13 +45,13 @@ def _place(
 
 def _resource(
     *,
-    exporter: str = "exp",
+    labgrid_exporter: str = "exp",
     group: str = "grp",
     name: str = "res",
     cls: str = "NetworkPowerPort",
     avail: bool,
 ) -> Resource:
-    return Resource(exporter=exporter, group=group, name=name, cls=cls, avail=avail)
+    return Resource(labgrid_exporter=labgrid_exporter, group=group, name=name, cls=cls, avail=avail)
 
 
 def _reservation(
@@ -211,27 +211,29 @@ def test_update_from_places_tracks_acquire_total_independently_per_place() -> No
 def test_update_from_resources_sets_availability() -> None:
     update_from_resources(
         [
-            _resource(exporter="exp", group="grp", name="avail-res", avail=True),
-            _resource(exporter="exp", group="grp", name="unavail-res", avail=False),
+            _resource(labgrid_exporter="exp", group="grp", name="avail-res", avail=True),
+            _resource(labgrid_exporter="exp", group="grp", name="unavail-res", avail=False),
         ]
     )
 
     assert (
         RESOURCE_AVAILABLE.labels(
-            exporter="exp", group="grp", name="avail-res", cls="NetworkPowerPort"
+            labgrid_exporter="exp", group="grp", name="avail-res", cls="NetworkPowerPort"
         )._value.get()
         == 1
     )
     assert (
         RESOURCE_AVAILABLE.labels(
-            exporter="exp", group="grp", name="unavail-res", cls="NetworkPowerPort"
+            labgrid_exporter="exp", group="grp", name="unavail-res", cls="NetworkPowerPort"
         )._value.get()
         == 0
     )
 
 
 def test_update_from_resources_removes_gauge_for_disappeared_resource() -> None:
-    update_from_resources([_resource(exporter="exp", group="grp", name="temp-res", avail=True)])
+    update_from_resources(
+        [_resource(labgrid_exporter="exp", group="grp", name="temp-res", avail=True)]
+    )
     assert ("exp", "grp", "temp-res", "NetworkPowerPort") in RESOURCE_AVAILABLE._metrics
 
     update_from_resources([])
@@ -241,12 +243,12 @@ def test_update_from_resources_removes_gauge_for_disappeared_resource() -> None:
 
 def test_update_from_resources_treats_cls_change_as_new_identity() -> None:
     update_from_resources(
-        [_resource(exporter="exp", group="grp", name="retyped", cls="OldCls", avail=True)]
+        [_resource(labgrid_exporter="exp", group="grp", name="retyped", cls="OldCls", avail=True)]
     )
     assert ("exp", "grp", "retyped", "OldCls") in RESOURCE_AVAILABLE._metrics
 
     update_from_resources(
-        [_resource(exporter="exp", group="grp", name="retyped", cls="NewCls", avail=True)]
+        [_resource(labgrid_exporter="exp", group="grp", name="retyped", cls="NewCls", avail=True)]
     )
 
     assert ("exp", "grp", "retyped", "OldCls") not in RESOURCE_AVAILABLE._metrics

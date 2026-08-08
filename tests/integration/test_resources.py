@@ -1,11 +1,11 @@
-"""Resource availability against a real labgrid-exporter process.
+"""Resource availability against a real labgrid exporter process.
 
 Unlike places, resource availability isn't driven by labgrid_client at all
 -- it comes from a completely separate labgrid-exporter container (see
 docker-compose.grpc.yml/docker-compose.wamp.yml) registering the resource
-in tests/integration/fixtures/exporter.yaml with the coordinator. That
-resource (NetworkService) deliberately never needs real hardware or a `dut`
-container to report available -- see the fixture file for why.
+in tests/integration/fixtures/labgrid-exporter.yaml with the coordinator.
+That resource (NetworkService) deliberately never needs real hardware or a
+`dut` container to report available -- see the fixture file for why.
 """
 
 from __future__ import annotations
@@ -26,11 +26,11 @@ def test_resource_availability_reported(
     # than depend on test execution order.
     restart_labgrid_exporter()
 
-    # Not matching on `exporter` (whatever identity string labgrid's
-    # exporter registers itself with, not worth pinning down) or `name`
-    # (its exact default for a single resource in a group isn't confirmed)
-    # -- group + cls alone already uniquely identifies this one resource in
-    # the fixture data.
+    # Not matching on `labgrid_exporter` (whatever identity string the
+    # labgrid exporter process registers itself with, not worth pinning
+    # down) or `name` (its exact default for a single resource in a group
+    # isn't confirmed) -- group + cls alone already uniquely identifies
+    # this one resource in the fixture data.
     #
     # Generous timeout: a real container restart + reconnect + registration
     # cycle, not just a local state change -- same reasoning as

@@ -4,7 +4,7 @@ Labgrid Framework Prometheus Exporter.
 
 Labgrid's coordinator protocol changed from WAMP (releases up to 24.x) to
 gRPC (releases from 25.0 onwards) as a hard, backwards-incompatible break.
-Since one exporter deployment only ever talks to one coordinator whose
+Since one Prometheus exporter deployment only ever talks to one coordinator whose
 labgrid version is known in advance, this project is split into a
 transport-agnostic core and one backend package per labgrid protocol
 generation, rather than trying to support every transport in one process.
@@ -47,7 +47,7 @@ uv sync --package labgrid-prometheus-exporter-core \
 
 ## Usage
 
-Run the exporter command:
+Run the Prometheus exporter command:
 
 ```sh
 uv run --no-sync labgrid-prometheus-exporter --coordinator 127.0.0.1:20408   # grpc
@@ -87,8 +87,11 @@ cost. All three tiers are implemented.
   caveat as everywhere else: an acquire/release cycle faster than the poll
   interval is invisible to these counters too.
 - **Tier 3 — resource and reservation detail** (implemented):
-  `labgrid_resource_available` (per-resource, labeled by exporter/group/name/cls)
-  and reservation queue depth (`labgrid_reservations_pending`,
+  `labgrid_resource_available` (per-resource, labeled by
+  `labgrid_exporter`/`group`/`name`/`cls` — `labgrid_exporter` identifies
+  the upstream labgrid exporter process that registered the resource, not
+  an instance of this Prometheus exporter) and reservation queue depth
+  (`labgrid_reservations_pending`,
   `labgrid_reservation_wait_seconds`). Resources behave like Tier 1's
   gauges — labgrid already pushes resource updates the same way it does
   place updates, so `CoordinatorBackend.resources()` is a cheap sync read
@@ -106,23 +109,25 @@ cost. All three tiers are implemented.
   and unsuitable as a label), and `labgrid_reservation_wait_seconds`
   reports `0` rather than being absent when nothing is pending, since
   unlabeled gauges have no absence concept to begin with. Resource
-  availability has real integration coverage too, against a real
-  `labgrid-exporter` process (the `labgrid-exporter` service in
+  availability has real integration coverage too, against a real labgrid
+  exporter process (the `labgrid-exporter` service in
   `docker-compose.grpc.yml`/`docker-compose.wamp.yml`, distinct from the
-  `exporter` service, which is our own exporter under test) — no `dut`
-  container needed: the fixture resource is a plain `NetworkService`,
+  `prometheus-exporter` service, which is this project's own Prometheus
+  exporter under test) — no `dut` container needed: the fixture resource
+  is a plain `NetworkService`,
   which labgrid reports available without ever checking real connectivity
-  (see `tests/integration/fixtures/exporter.yaml`).
+  (see `tests/integration/fixtures/labgrid-exporter.yaml`).
 
 ## Reconnection
 
 Neither labgrid transport's `ClientSession` reconnects on its own once its
 connection to the coordinator drops (a coordinator restart during a
 deployment, a network blip, ...) — that's expected for labgrid's own
-tooling, which is one-shot and short-lived, but not acceptable for an
-exporter meant to run unattended for a long time. So the exporter's poll
-loop detects the drop itself and retries `connect()` on its own regular
-poll interval — no separate backoff schedule, no manual restart needed.
+tooling, which is one-shot and short-lived, but not acceptable for a
+Prometheus exporter meant to run unattended for a long time. So this
+exporter's poll loop detects the drop itself and retries `connect()` on
+its own regular poll interval — no separate backoff schedule, no manual
+restart needed.
 
 Two things follow operationally: `labgrid_coordinator_connected` drops to
 `0` for the duration of an outage, so alert on that (and on
@@ -147,12 +152,14 @@ make type-check
 
 ### Integration tests
 
-`make test-integration` builds and runs a real labgrid coordinator (from
-labgrid's own `dockerfiles/`, pinned to the exact tag each backend is tested
-against — not pulled from a registry) plus a real
-`labgrid-prometheus-exporter` container via Docker Compose
-(`docker-compose.grpc.yml` / `docker-compose.wamp.yml`), then drives it with
-`labgrid-client` and scrapes `/metrics` for real
+`make test-integration` builds and runs a real labgrid coordinator plus a
+real labgrid exporter (both from labgrid's own `dockerfiles/`, pinned to
+the exact tag each backend is tested against — not pulled from a
+registry), alongside a real `labgrid-prometheus-exporter` container under
+test, via Docker Compose (`docker-compose.grpc.yml` /
+`docker-compose.wamp.yml`, services `coordinator` / `labgrid-exporter` /
+`prometheus-exporter` respectively). It drives the coordinator with
+`labgrid-client` and scrapes the Prometheus exporter's `/metrics` for real
 (`tests/integration/`). It's slow and needs Docker, so unlike `make test`
 it's **not** run by the pre-commit hook or on every commit — run it
 explicitly, or from CI on a schedule/PR.

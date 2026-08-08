@@ -54,12 +54,31 @@ it explicitly when touching backend connection logic.
   script. Discovers which single backend is installed at runtime
   (`labgrid_prometheus_exporter/backends.py`) and fails loudly if it's zero
   or more than one.
-- `tests/integration/` — Docker Compose based end-to-end tests (real
-  coordinator + real exporter container). `conftest.py` has the fixtures;
-  `docker-compose.grpc.yml`/`docker-compose.wamp.yml` at the repo root
-  define the stacks.
+- `tests/integration/` — Docker Compose based end-to-end tests. Each stack
+  has three real containers: `coordinator`, `prometheus-exporter` (this
+  project's own exporter, the system under test), and `labgrid-exporter`
+  (upstream labgrid's own exporter, registering a fixture resource so
+  `labgrid_resource_available` has something real to report on). See
+  "Naming" below for why those two are never both called just "exporter."
+  `conftest.py` has the fixtures; `docker-compose.grpc.yml`/
+  `docker-compose.wamp.yml` at the repo root define the stacks.
 - Root `conftest.py` — not a test file, a workaround (see below). Don't
   delete it because it looks unused.
+
+## Naming: two different things are called "exporter"
+
+This project (`labgrid-prometheus-exporter`) is a Prometheus exporter.
+Separately, labgrid itself ships its own `labgrid-exporter` binary, which
+registers hardware resources with the coordinator — a real one runs as the
+`tests/integration/` fixture. These are unrelated processes that happen to
+share a generic name. To avoid the ambiguity, say "Prometheus exporter"
+(this project) or "labgrid exporter" (upstream) instead of bare
+"exporter" wherever context doesn't already make it obvious, and prefer
+identifiers that do the same: the `labgrid_exporter` label on
+`labgrid_resource_available` (`packages/core/.../interface.py`'s
+`Resource.labgrid_exporter`) and the `prometheus-exporter`/
+`labgrid-exporter` Compose service names are both named this way
+deliberately.
 
 ## Non-obvious gotchas (all found the hard way)
 
@@ -104,9 +123,15 @@ it explicitly when touching backend connection logic.
 
 ## Reconnection
 
-The exporter's poll loop (`core/exporter.py`'s `_poll()`) retries the
-coordinator connection on its own regular poll interval if it drops —
-neither labgrid transport does this on its own. See the README's
+This Prometheus exporter's poll loop (`core/exporter.py`'s `_poll()`)
+retries the coordinator connection on its own regular poll interval if it
+drops — neither labgrid transport does this on its own. Upstream's own
+`labgrid-exporter` binary doesn't either, and unlike this project it has
+no fix for it: it just exits and relies on an external process supervisor
+(systemd `Restart=`, a container orchestrator's restart policy, ...) to
+start it again — see `restart_labgrid_exporter` in
+`tests/integration/conftest.py` for where that bit this project's own
+Docker Compose test fixture, since Compose's default is no restart. See the README's
 "Reconnection" section for the operational implications (what
 `labgrid_coordinator_connected` means, why place metrics hold their last
 value through an outage instead of clearing). If you touch this logic,

@@ -35,14 +35,19 @@ class Place:
 class Resource:
     """Version-agnostic snapshot of a labgrid resource.
 
-    exporter/group/name are the outer dict keys of
+    labgrid_exporter/group/name are the outer dict keys of
     labgrid.remote.client.ClientSession.resources, not part of a
     ResourceEntry's own data; cls and avail come from ResourceEntry itself.
     Deliberately excludes ResourceEntry's params/extra/acquired -- no
     current documented need beyond availability.
+
+    labgrid_exporter identifies the upstream labgrid exporter process (the
+    labgrid-exporter binary) that registered this resource with the
+    coordinator -- not an instance of this project's own
+    labgrid-prometheus-exporter.
     """
 
-    exporter: str
+    labgrid_exporter: str
     group: str
     name: str
     cls: str

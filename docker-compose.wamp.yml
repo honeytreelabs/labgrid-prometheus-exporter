@@ -1,4 +1,4 @@
-# Coordinator + exporter stack for the WAMP backend (labgrid < 25.0).
+# Coordinator + Prometheus exporter stack for the WAMP backend (labgrid < 25.0).
 # Not used by `make test` -- see `make test-integration`.
 #
 # Explicit project name: see docker-compose.grpc.yml for why.
@@ -44,7 +44,7 @@ services:
       timeout: 2s
       retries: 30
 
-  exporter:
+  prometheus-exporter:
     build:
       context: .
       args:
@@ -68,7 +68,7 @@ services:
       retries: 30
 
   # See docker-compose.grpc.yml for why this service exists and why it's
-  # named distinctly from `exporter` above.
+  # named distinctly from `prometheus-exporter` above.
   labgrid-exporter:
     build:
       context: "https://github.com/labgrid-project/labgrid.git#v24.0.3"
@@ -80,7 +80,7 @@ services:
       - "./tests/integration/fixtures:/opt/conf:ro"
     environment:
       LG_CROSSBAR: "ws://coordinator:20408/ws"
-    command: ["labgrid-exporter", "/opt/conf/exporter.yaml"]
+    command: ["labgrid-exporter", "/opt/conf/labgrid-exporter.yaml"]
     depends_on:
       coordinator:
         condition: service_healthy

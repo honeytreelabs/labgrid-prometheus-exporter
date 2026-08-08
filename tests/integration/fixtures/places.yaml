@@ -2,10 +2,13 @@
 # docker-compose.grpc.yml / docker-compose.wamp.yml). Same schema in both
 # labgrid protocol generations -- Place's fields haven't changed since 24.x.
 #
-# No `matches` entries and no exporter/dut containers: this place exists
-# purely to exercise place-level metrics (acquired, tags, changed), which is
-# all labgrid-prometheus-exporter reads today. Resource-level metrics (tier
-# 3, not yet implemented) would need a real exporter+dut here instead.
+# No `matches` entries and no acquired resources: this place exists purely
+# to exercise place-level metrics (acquired, tags, changed). Resource-level
+# metrics (labgrid_resource_available) are exercised separately, against
+# the labgrid-exporter service's own fixture -- see
+# tests/integration/fixtures/labgrid-exporter.yaml -- not through a place
+# at all, since resource availability is coordinator-wide state independent
+# of places.
 integration-test-place:
   acquired: null
   acquired_resources: []

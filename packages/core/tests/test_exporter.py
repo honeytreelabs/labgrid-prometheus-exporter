@@ -36,9 +36,15 @@ class _FakeBackend:
         self.connect_calls = 0
         self.close_calls = 0
         self.fail_next_connect = False
+        # Snapshots COORDINATOR_CONNECTED's real gauge value at the moment
+        # each connect() attempt starts -- used to check that a disconnect
+        # is reported before a reconnect is even attempted, not only if
+        # that attempt also happens to fail.
+        self.gauge_reading_during_connect: list[float | None] = []
 
     async def connect(self) -> None:
         self.connect_calls += 1
+        self.gauge_reading_during_connect.append(COORDINATOR_CONNECTED._value.get())
         if self.fail_next_connect:
             self.fail_next_connect = False
             raise RuntimeError("connect failed")
@@ -84,6 +90,24 @@ def test_poll_reconnects_when_disconnected(caplog: pytest.LogCaptureFixture) -> 
     # ambiguity (recovered vs. stuck) is exactly what made a real transient
     # failure hard to diagnose from an exporter's logs alone.
     assert "reconnected to coordinator" in caplog.text
+
+
+def test_poll_reports_disconnect_even_when_reconnect_succeeds_immediately() -> None:
+    # Found via a live integration trace: a coordinator restart whose first
+    # reconnect attempt hit a transient DNS blip did make
+    # labgrid_coordinator_connected visibly read 0; one whose first attempt
+    # succeeded immediately never did, because update_connection_health(False)
+    # used to be called only from the failed-reconnect branch -- a
+    # same-cycle recovery fell straight through to the final
+    # update_connection_health(backend.connected()) call with connected()
+    # already true again, silently skipping a disconnect that genuinely
+    # happened.
+    backend = _FakeBackend(places={}, connected=False)
+
+    asyncio.run(_poll(backend))
+
+    assert backend.gauge_reading_during_connect == [0]
+    assert COORDINATOR_CONNECTED._value.get() == 1
 
 
 def test_poll_keeps_stale_place_metrics_when_reconnect_fails() -> None:

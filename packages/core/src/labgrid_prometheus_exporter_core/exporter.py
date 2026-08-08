@@ -36,12 +36,23 @@ async def _poll(backend: CoordinatorBackend) -> None:
     """
     if not backend.connected():
         logger.warning("lost connection to coordinator, reconnecting")
+        # Report the drop the moment it's detected, not only if the
+        # reconnect attempt below also fails: a reconnect that succeeds on
+        # its first try within this same poll cycle would otherwise fall
+        # through to the update_connection_health() call at the end of this
+        # function with connected() already true again, so the gauge would
+        # go straight from 1 to 1 -- silently skipping a disconnect that
+        # genuinely happened, just because it also genuinely resolved
+        # quickly. Confirmed via a live trace: a coordinator restart whose
+        # first reconnect attempt fails (e.g. a transient DNS blip) does
+        # show a real 0 here; one whose first attempt immediately succeeds
+        # never did, before this fix.
+        update_connection_health(False)
         await backend.close()
         try:
             await backend.connect()
         except Exception:
             logger.exception("reconnect failed, will retry next poll")
-            update_connection_health(False)
             return
         else:
             # Without this, a successful reconnect is silent: logs would

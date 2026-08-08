@@ -7,7 +7,11 @@ PYTHON ?= uv run
 # syncing only core + meta + that one backend each time.
 BACKENDS := grpc wamp
 
-.PHONY: help install install-python install-hooks pre-commit test test-integration lint format format-check type-check build clean
+.PHONY: help install install-python install-hooks pre-commit test test-integration lint format format-check type-check build docker-build docker-push docker-publish clean
+
+IMAGE_REGISTRY ?= ghcr.io/example
+IMAGE_NAME ?= labgrid-prometheus-exporter
+IMAGE_TAG ?= latest
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
@@ -66,6 +70,21 @@ type-check: ## Run Python type checks for each backend variant
 
 build: ## Build Python package artifacts
 	uv build --all-packages
+
+docker-build: ## Build the Docker image for each backend variant (IMAGE_REGISTRY/IMAGE_NAME/IMAGE_TAG overridable)
+	@set -e; for backend in $(BACKENDS); do \
+		echo "--- building $$backend image ---"; \
+		docker build --build-arg BACKEND=$$backend \
+			-t $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)-$$backend .; \
+	done
+
+docker-push: ## Push the previously built Docker image for each backend variant (needs `docker login` first)
+	@set -e; for backend in $(BACKENDS); do \
+		echo "--- pushing $$backend image ---"; \
+		docker push $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)-$$backend; \
+	done
+
+docker-publish: docker-build docker-push ## Build and push the Docker image for each backend variant
 
 clean: ## Remove local test/build artifacts
 	find . -type d \( -name .pytest_cache -o -name .ruff_cache -o -name htmlcov -o -name build -o -name dist -o -name '*.egg-info' \) -prune -exec rm -r {} +

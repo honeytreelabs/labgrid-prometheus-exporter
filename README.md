@@ -106,10 +106,13 @@ cost. All three tiers are implemented.
   and unsuitable as a label), and `labgrid_reservation_wait_seconds`
   reports `0` rather than being absent when nothing is pending, since
   unlabeled gauges have no absence concept to begin with. Resource
-  availability currently has unit test coverage only — proving it against
-  a real exporter reporting real hardware presence would need bringing
-  back the `exporter`/`dut` containers dropped from the integration setup
-  back in Tier 1 (see `tests/integration/`), which hasn't been done yet.
+  availability has real integration coverage too, against a real
+  `labgrid-exporter` process (the `labgrid-exporter` service in
+  `docker-compose.grpc.yml`/`docker-compose.wamp.yml`, distinct from the
+  `exporter` service, which is our own exporter under test) — no `dut`
+  container needed: the fixture resource is a plain `NetworkService`,
+  which labgrid reports available without ever checking real connectivity
+  (see `tests/integration/fixtures/exporter.yaml`).
 
 ## Reconnection
 

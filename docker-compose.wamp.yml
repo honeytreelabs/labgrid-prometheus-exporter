@@ -66,3 +66,21 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+
+  # See docker-compose.grpc.yml for why this service exists and why it's
+  # named distinctly from `exporter` above.
+  labgrid-exporter:
+    build:
+      context: "https://github.com/labgrid-project/labgrid.git#v24.0.3"
+      dockerfile: dockerfiles/Dockerfile
+      target: labgrid-exporter
+      args:
+        VERSION: "24.0.3"
+    volumes:
+      - "./tests/integration/fixtures:/opt/conf:ro"
+    environment:
+      LG_CROSSBAR: "ws://coordinator:20408/ws"
+    command: ["labgrid-exporter", "/opt/conf/exporter.yaml"]
+    depends_on:
+      coordinator:
+        condition: service_healthy

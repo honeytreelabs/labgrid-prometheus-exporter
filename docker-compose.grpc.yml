@@ -57,3 +57,29 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+
+  # A real labgrid-exporter process, registering one resource (see
+  # tests/integration/fixtures/exporter.yaml) so labgrid_resource_available
+  # can be proven against real exporter behavior, not just unit-tested
+  # diffing logic. Named distinctly from `exporter` above (our own
+  # labgrid-prometheus-exporter container, the actual system under test) to
+  # avoid confusing "the thing we're testing" with "test fixture
+  # infrastructure". No healthcheck: nothing else depends on its readiness
+  # for startup ordering, and the resource test polls for the metric to
+  # appear via the existing wait_until fixture. No published host port
+  # either: nothing outside the Docker network needs to reach it directly.
+  labgrid-exporter:
+    build:
+      context: "https://github.com/labgrid-project/labgrid.git#v26.0"
+      dockerfile: dockerfiles/Dockerfile
+      target: labgrid-exporter
+      args:
+        VERSION: "26.0"
+    volumes:
+      - "./tests/integration/fixtures:/opt/conf:ro"
+    environment:
+      LG_COORDINATOR: "coordinator:20408"
+    command: ["labgrid-exporter", "/opt/conf/exporter.yaml"]
+    depends_on:
+      coordinator:
+        condition: service_healthy

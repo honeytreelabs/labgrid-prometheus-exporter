@@ -90,6 +90,27 @@ def restart_coordinator(compose_stack: dict[str, str]) -> Callable[[], None]:
     return restart
 
 
+@pytest.fixture
+def restart_labgrid_exporter(compose_stack: dict[str, str]) -> Callable[[], None]:
+    """Restart the labgrid-exporter container, forcing a fresh registration.
+
+    Needed because labgrid-exporter -- unlike this project's own exporter --
+    is unmodified upstream labgrid code with no reconnect logic of its own:
+    confirmed via `docker compose logs labgrid-exporter` that after a
+    coordinator restart it logs "coordinator became unavailable: Cancelling
+    all calls" and never reconnects, permanently orphaning its resource
+    registration. Since compose_stack is session-scoped and shared with
+    test_reconnect.py (which restarts the coordinator), test_resources.py
+    can't just assume labgrid-exporter is still connected -- it has to force
+    a fresh connection itself rather than depend on test execution order.
+    """
+
+    def restart() -> None:
+        _compose("restart", "labgrid-exporter")
+
+    return restart
+
+
 _LABGRID_CLIENT_SCRIPT = (
     # labgrid-client is invoked via `python -c` instead of the console
     # script directly so we can set an event loop before importing

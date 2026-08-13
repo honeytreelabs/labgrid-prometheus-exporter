@@ -1,10 +1,11 @@
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "apps/prometheus-exporter"]
 
 [dependency-groups]
-# httpx is only used by tests/integration (scraping the exporter's HTTP
-# endpoint); kept here rather than in a package's own dev group since it
-# isn't specific to core/backend-grpc/backend-wamp/meta.
+# httpx is only used by apps/prometheus-exporter/integration/tests
+# (scraping the exporter's HTTP endpoint); kept here rather than in a
+# package's own dev group since it isn't specific to the reusable toolkit
+# packages or the Prometheus exporter app package.
 dev = ["pre-commit>=4.6.1", "httpx>=0.27"]
 
 [tool.uv]
@@ -14,8 +15,8 @@ dev = ["pre-commit>=4.6.1", "httpx>=0.27"]
 preview-features = ["package-conflicts"]
 conflicts = [
     [
-        { package = "labgrid-prometheus-exporter-backend-grpc" },
-        { package = "labgrid-prometheus-exporter-backend-wamp" },
+        { package = "labgrid-toolkit-backend-grpc" },
+        { package = "labgrid-toolkit-backend-wamp" },
     ],
 ]
 
@@ -24,7 +25,7 @@ line-length = 100
 target-version = "py313"
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "apps/prometheus-exporter/tests"]
 # labgrid ships a pytest11 plugin that pytest autoloads whenever labgrid is
 # installed, regardless of whether it's used. Importing it imports
 # labgrid.remote.client, which on labgrid < 25.0 (the wamp backend) runs

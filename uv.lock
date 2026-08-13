@@ -2,22 +2,22 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 resolution-markers = [
-    "platform_python_implementation == 'PyPy' and sys_platform == 'win32' and extra != 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'",
-    "(platform_python_implementation != 'PyPy' and extra != 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp') or (sys_platform != 'win32' and extra != 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp')",
-    "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra != 'project-40-labgrid-prometheus-exporter-backend-wamp'",
-    "extra != 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra != 'project-40-labgrid-prometheus-exporter-backend-wamp'",
+    "platform_python_implementation == 'PyPy' and sys_platform == 'win32' and extra != 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp'",
+    "(platform_python_implementation != 'PyPy' and extra != 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp') or (sys_platform != 'win32' and extra != 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp')",
+    "extra == 'project-28-labgrid-toolkit-backend-grpc' and extra != 'project-28-labgrid-toolkit-backend-wamp'",
+    "extra != 'project-28-labgrid-toolkit-backend-grpc' and extra != 'project-28-labgrid-toolkit-backend-wamp'",
 ]
 conflicts = [[
-    { package = "labgrid-prometheus-exporter-backend-grpc" },
-    { package = "labgrid-prometheus-exporter-backend-wamp" },
+    { package = "labgrid-toolkit-backend-grpc" },
+    { package = "labgrid-toolkit-backend-wamp" },
 ]]
 
 [manifest]
 members = [
     "labgrid-prometheus-exporter",
-    "labgrid-prometheus-exporter-backend-grpc",
-    "labgrid-prometheus-exporter-backend-wamp",
-    "labgrid-prometheus-exporter-core",
+    "labgrid-toolkit-backend-grpc",
+    "labgrid-toolkit-backend-wamp",
+    "labgrid-toolkit-core",
 ]
 
 [manifest.dependency-groups]
@@ -61,14 +61,14 @@ name = "autobahn"
 version = "26.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cbor2", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "cffi", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "cryptography", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "hyperlink", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "msgpack", marker = "(platform_python_implementation == 'CPython' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp') or (extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp')" },
-    { name = "txaio", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "u-msgpack-python", marker = "(platform_python_implementation != 'CPython' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp') or (extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp')" },
-    { name = "ujson", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "cbor2", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "cffi", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "cryptography", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "hyperlink", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "msgpack", marker = "(platform_python_implementation == 'CPython' and extra == 'project-28-labgrid-toolkit-backend-wamp') or (extra == 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp')" },
+    { name = "txaio", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "u-msgpack-python", marker = "(platform_python_implementation != 'CPython' and extra == 'project-28-labgrid-toolkit-backend-wamp') or (extra == 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp')" },
+    { name = "ujson", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/de/73/f109f563c27e048e45d135d81af19e6ca391e24905550b06bd1c9d674c57/autobahn-26.7.1.tar.gz", hash = "sha256:c6949a2c6eb95fb1c218837dbda0a59abbbebafb8b11098551c01a7061dfd245", size = 14056542, upload-time = "2026-07-15T19:14:01.246Z" }
 wheels = [
@@ -123,7 +123,7 @@ name = "cffi"
 version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "(implementation_name != 'PyPy' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp') or (extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp')" },
+    { name = "pycparser", marker = "(implementation_name != 'PyPy' and extra == 'project-28-labgrid-toolkit-backend-wamp') or (extra == 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9e/ef/008a1939e372c06329a3fce4279c02f328488f3526744906eeec3da7ad5f/cffi-2.1.1.tar.gz", hash = "sha256:dd31f52ea1086513bb9df30f8fcee9b8918323ae067a3d5b78bc826a000712be", size = 530807, upload-time = "2026-08-03T21:21:18.939Z" }
 wheels = [
@@ -316,7 +316,7 @@ name = "cryptography"
 version = "50.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "(platform_python_implementation != 'PyPy' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp') or (extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp')" },
+    { name = "cffi", marker = "(platform_python_implementation != 'PyPy' and extra == 'project-28-labgrid-toolkit-backend-wamp') or (extra == 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/de/41/6cbdcf9142d00fe82836fbb51e503e58088575cf7a0fe1dbff6695bf0840/cryptography-50.0.0.tar.gz", hash = "sha256:eeac2acb5a20ed25e0ad6d1df9891a520b78b404266b6d11778f25d5d691a6c9", size = 880201, upload-time = "2026-07-31T14:25:10.11Z" }
 wheels = [
@@ -393,7 +393,7 @@ name = "grpcio"
 version = "1.83.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
+    { name = "typing-extensions", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0c/98/304898ac4e04e2d5e4e4c2eadc178b1f2a16d5f4bc2f91306c87d64680b9/grpcio-1.83.0.tar.gz", hash = "sha256:7674587248fbbb2ac6e4eecf83a8a0f3d91a928f941de571acfd3a2f007fbc24", size = 13428824, upload-time = "2026-07-23T15:20:37.759Z" }
 wheels = [
@@ -424,8 +424,8 @@ name = "grpcio-reflection"
 version = "1.83.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "grpcio", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "protobuf", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
+    { name = "grpcio", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "protobuf", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e5/6e/e46a65398fe4289b62f46266234321fcfb9ff96fcd69c872440c2bfaf607/grpcio_reflection-1.83.0.tar.gz", hash = "sha256:6a2a30a462ac2c3c6d149734a8fe655fa7617c17fa2cda9949006f3bf07f5b3e", size = 19203, upload-time = "2026-07-23T15:24:26.163Z" }
 wheels = [
@@ -474,7 +474,7 @@ name = "hyperlink"
 version = "21.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "idna", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "idna", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3a/51/1947bd81d75af87e3bb9e34593a4cf118115a8feb451ce7a69044ef1412e/hyperlink-21.0.0.tar.gz", hash = "sha256:427af957daa58bc909471c6c40f74c5450fa123dd093fc53efd2e91d2705a56b", size = 140743, upload-time = "2021-01-08T05:51:20.972Z" }
 wheels = [
@@ -513,7 +513,7 @@ name = "jinja2"
 version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "markupsafe", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' or extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "markupsafe", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc' or extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d", size = 245115, upload-time = "2025-03-05T20:05:02.478Z" }
 wheels = [
@@ -529,18 +529,18 @@ resolution-markers = [
     "platform_python_implementation != 'PyPy' or sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "ansicolors", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "attrs", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "autobahn", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "jinja2", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "pexpect", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "pyserial-labgrid", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "pytest", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "pyudev", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "pyusb", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "pyyaml", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "requests", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "xmodem", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "ansicolors", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "attrs", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "autobahn", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "jinja2", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "pexpect", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "pyserial-labgrid", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "pytest", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "pyudev", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "pyusb", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "pyyaml", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "requests", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "xmodem", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e3/8d/29a642c13eb14b9063bc6a2f7168ee25140ee3b889e1d8d8edd63e988353/labgrid-24.0.3.tar.gz", hash = "sha256:8cc1a40c672986c179828a91d58e8beb35c570132f357cf0b57604e12904d495", size = 419632, upload-time = "2025-02-12T10:27:08.051Z" }
 wheels = [
@@ -552,20 +552,20 @@ name = "labgrid"
 version = "26.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "attrs", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "exceptiongroup", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "grpcio", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "grpcio-reflection", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "jinja2", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "pexpect", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "protobuf", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "pyserial-labgrid", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "pytest", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "pyudev", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "pyusb", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "pyyaml", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "requests", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "xmodem", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
+    { name = "attrs", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "exceptiongroup", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "grpcio", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "grpcio-reflection", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "jinja2", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "pexpect", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "protobuf", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "pyserial-labgrid", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "pytest", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "pyudev", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "pyusb", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "pyyaml", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "requests", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "xmodem", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/58/23/e8b3e879003973999b70d56f238f80777dfa3c45450241de749c52657bc3/labgrid-26.0.tar.gz", hash = "sha256:686695d3fa8c0ac0c9a6e6b42f9c8e9e92a9363c9d4945718e5fc21e431bd3d8", size = 485177, upload-time = "2026-06-06T13:58:00.475Z" }
 wheels = [
@@ -575,17 +575,17 @@ wheels = [
 [[package]]
 name = "labgrid-prometheus-exporter"
 version = "0.1.0"
-source = { editable = "packages/meta" }
+source = { editable = "apps/prometheus-exporter" }
 dependencies = [
-    { name = "labgrid-prometheus-exporter-core" },
+    { name = "labgrid-toolkit-core" },
 ]
 
 [package.optional-dependencies]
 grpc = [
-    { name = "labgrid-prometheus-exporter-backend-grpc", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
+    { name = "labgrid-toolkit-backend-grpc", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
 ]
 wamp = [
-    { name = "labgrid-prometheus-exporter-backend-wamp", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "labgrid-toolkit-backend-wamp", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 
 [package.dev-dependencies]
@@ -598,9 +598,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "labgrid-prometheus-exporter-backend-grpc", marker = "extra == 'grpc'", editable = "packages/backend-grpc" },
-    { name = "labgrid-prometheus-exporter-backend-wamp", marker = "extra == 'wamp'", editable = "packages/backend-wamp" },
-    { name = "labgrid-prometheus-exporter-core", editable = "packages/core" },
+    { name = "labgrid-toolkit-backend-grpc", marker = "extra == 'grpc'", editable = "packages/labgrid-toolkit-backend-grpc" },
+    { name = "labgrid-toolkit-backend-wamp", marker = "extra == 'wamp'", editable = "packages/labgrid-toolkit-backend-wamp" },
+    { name = "labgrid-toolkit-core", editable = "packages/labgrid-toolkit-core" },
 ]
 provides-extras = ["grpc", "wamp"]
 
@@ -613,12 +613,12 @@ dev = [
 ]
 
 [[package]]
-name = "labgrid-prometheus-exporter-backend-grpc"
+name = "labgrid-toolkit-backend-grpc"
 version = "0.1.0"
-source = { editable = "packages/backend-grpc" }
+source = { editable = "packages/labgrid-toolkit-backend-grpc" }
 dependencies = [
-    { name = "labgrid", version = "26.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
-    { name = "labgrid-prometheus-exporter-core", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc'" },
+    { name = "labgrid", version = "26.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
+    { name = "labgrid-toolkit-core", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc'" },
 ]
 
 [package.dev-dependencies]
@@ -632,7 +632,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "labgrid", specifier = ">=25.0" },
-    { name = "labgrid-prometheus-exporter-core", editable = "packages/core" },
+    { name = "labgrid-toolkit-core", editable = "packages/labgrid-toolkit-core" },
 ]
 
 [package.metadata.requires-dev]
@@ -644,13 +644,13 @@ dev = [
 ]
 
 [[package]]
-name = "labgrid-prometheus-exporter-backend-wamp"
+name = "labgrid-toolkit-backend-wamp"
 version = "0.1.0"
-source = { editable = "packages/backend-wamp" }
+source = { editable = "packages/labgrid-toolkit-backend-wamp" }
 dependencies = [
-    { name = "autobahn", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "labgrid", version = "24.0.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "labgrid-prometheus-exporter-core", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "autobahn", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "labgrid", version = "24.0.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "labgrid-toolkit-core", marker = "extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 
 [package.dev-dependencies]
@@ -665,7 +665,7 @@ dev = [
 requires-dist = [
     { name = "autobahn", specifier = ">=21.3.1" },
     { name = "labgrid", specifier = ">=24.0,<25.0" },
-    { name = "labgrid-prometheus-exporter-core", editable = "packages/core" },
+    { name = "labgrid-toolkit-core", editable = "packages/labgrid-toolkit-core" },
 ]
 
 [package.metadata.requires-dev]
@@ -677,9 +677,9 @@ dev = [
 ]
 
 [[package]]
-name = "labgrid-prometheus-exporter-core"
+name = "labgrid-toolkit-core"
 version = "0.1.0"
-source = { editable = "packages/core" }
+source = { editable = "packages/labgrid-toolkit-core" }
 dependencies = [
     { name = "prometheus-client" },
 ]
@@ -819,7 +819,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' or extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "ptyprocess", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc' or extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -925,7 +925,7 @@ name = "pytest"
 version = "9.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' and extra == 'project-40-labgrid-prometheus-exporter-backend-wamp')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'project-28-labgrid-toolkit-backend-grpc' and extra == 'project-28-labgrid-toolkit-backend-wamp')" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
@@ -1021,10 +1021,10 @@ name = "requests"
 version = "2.34.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "certifi", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' or extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "charset-normalizer", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' or extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "idna", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' or extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
-    { name = "urllib3", marker = "extra == 'project-40-labgrid-prometheus-exporter-backend-grpc' or extra == 'project-40-labgrid-prometheus-exporter-backend-wamp'" },
+    { name = "certifi", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc' or extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "charset-normalizer", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc' or extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "idna", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc' or extra == 'project-28-labgrid-toolkit-backend-wamp'" },
+    { name = "urllib3", marker = "extra == 'project-28-labgrid-toolkit-backend-grpc' or extra == 'project-28-labgrid-toolkit-backend-wamp'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [

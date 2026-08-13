@@ -25,16 +25,16 @@
     # `uv sync` can no longer resolve -- it would need both at once. Pick
     # one backend as the default for automatic shell-activation sync; switch
     # to the other manually the same way `make test`/`make type-check` do:
-    #   uv sync --package labgrid-prometheus-exporter-core \
+    #   uv sync --package labgrid-toolkit-core \
     #           --package labgrid-prometheus-exporter \
-    #           --package labgrid-prometheus-exporter-backend-wamp
+    #           --package labgrid-toolkit-backend-wamp
     uv.sync.arguments = [
       "--package"
-      "labgrid-prometheus-exporter-core"
+      "labgrid-toolkit-core"
       "--package"
       "labgrid-prometheus-exporter"
       "--package"
-      "labgrid-prometheus-exporter-backend-grpc"
+      "labgrid-toolkit-backend-grpc"
     ];
   };
 

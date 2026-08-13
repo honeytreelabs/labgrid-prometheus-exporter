@@ -4,7 +4,7 @@ PYTHON ?= uv run
 # conflicts in the root pyproject.toml: they require incompatible labgrid
 # ranges), so there is no single synced environment containing both. Targets
 # that need real imports (test, type-check, install) loop over each variant,
-# syncing only core + meta + that one backend each time.
+# syncing only core + the Prometheus exporter app + that one backend each time.
 BACKENDS := grpc wamp
 
 .PHONY: help install install-python install-hooks pre-commit test test-integration lint format format-check type-check build docker-build docker-push docker-publish clean
@@ -21,8 +21,8 @@ install: install-python install-hooks ## Install dependencies and Git hooks
 install-python: ## Install Python dependencies for each backend variant
 	@set -e; for backend in $(BACKENDS); do \
 		echo "--- syncing $$backend backend ---"; \
-		uv sync --package labgrid-prometheus-exporter-core --package labgrid-prometheus-exporter \
-			--package labgrid-prometheus-exporter-backend-$$backend; \
+		uv sync --package labgrid-toolkit-core --package labgrid-prometheus-exporter \
+			--package labgrid-toolkit-backend-$$backend; \
 	done
 
 install-hooks: ## Install pre-commit hooks
@@ -34,17 +34,17 @@ pre-commit: ## Run pre-commit hooks on tracked and untracked files
 test: ## Run Python tests for each backend variant
 	@set -e; for backend in $(BACKENDS); do \
 		echo "--- testing $$backend backend ---"; \
-		uv sync --package labgrid-prometheus-exporter-core --package labgrid-prometheus-exporter \
-			--package labgrid-prometheus-exporter-backend-$$backend; \
-		uv run --no-sync pytest packages/core packages/meta packages/backend-$$backend; \
+		uv sync --package labgrid-toolkit-core --package labgrid-prometheus-exporter \
+			--package labgrid-toolkit-backend-$$backend; \
+		uv run --no-sync pytest packages/labgrid-toolkit-core apps/prometheus-exporter/tests packages/labgrid-toolkit-backend-$$backend; \
 	done
 
 test-integration: ## Run Docker-based integration tests for each backend variant (slow; not run by `make test` or pre-commit)
 	@set -e; for backend in $(BACKENDS); do \
 		echo "--- integration-testing $$backend backend ---"; \
-		uv sync --package labgrid-prometheus-exporter-core --package labgrid-prometheus-exporter \
-			--package labgrid-prometheus-exporter-backend-$$backend; \
-		LG_PROMETHEUS_EXPORTER_TEST_VARIANT=$$backend uv run --no-sync pytest -vv tests/integration; \
+		uv sync --package labgrid-toolkit-core --package labgrid-prometheus-exporter \
+			--package labgrid-toolkit-backend-$$backend; \
+		LG_PROMETHEUS_EXPORTER_TEST_VARIANT=$$backend uv run --no-sync pytest -vv apps/prometheus-exporter/integration/tests; \
 	done
 
 ## ruff is pure static analysis (no imports resolved against installed
@@ -63,9 +63,9 @@ format-check: ## Check Python code formatting
 type-check: ## Run Python type checks for each backend variant
 	@set -e; for backend in $(BACKENDS); do \
 		echo "--- type-checking $$backend backend ---"; \
-		uv sync --package labgrid-prometheus-exporter-core --package labgrid-prometheus-exporter \
-			--package labgrid-prometheus-exporter-backend-$$backend; \
-		uv run --no-sync ty check packages/core packages/meta packages/backend-$$backend tests/integration; \
+		uv sync --package labgrid-toolkit-core --package labgrid-prometheus-exporter \
+			--package labgrid-toolkit-backend-$$backend; \
+		uv run --no-sync ty check packages/labgrid-toolkit-core apps/prometheus-exporter/src apps/prometheus-exporter/tests packages/labgrid-toolkit-backend-$$backend apps/prometheus-exporter/integration/tests; \
 	done
 
 build: ## Build Python package artifacts
@@ -75,6 +75,7 @@ docker-build: ## Build the Docker image for each backend variant (IMAGE_REGISTRY
 	@set -e; for backend in $(BACKENDS); do \
 		echo "--- building $$backend image ---"; \
 		docker build --build-arg BACKEND=$$backend \
+			-f apps/prometheus-exporter/docker/Dockerfile \
 			-t $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)-$$backend .; \
 	done
 

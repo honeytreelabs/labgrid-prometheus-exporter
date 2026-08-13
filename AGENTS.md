@@ -85,7 +85,8 @@ deliberately.
 - **labgrid < 25.0 + Python >= 3.14 is broken at import time.**
   `labgrid.remote.client` runs `txaio.config.loop = asyncio.get_event_loop()`
   at module import time, which raises on Python >= 3.14 with no loop
-  already set. Worked around in two places: `-p no:labgrid` in pytest
+  already set. The project targets Python 3.13 for compatibility with both
+  supported labgrid generations. Worked around in two places: `-p no:labgrid` in pytest
   `addopts` (stops pytest autoloading labgrid's own pytest11 plugin) and
   the root `conftest.py` (sets an event loop before any test module can
   import `labgrid.remote.client` transitively). Both are still needed —

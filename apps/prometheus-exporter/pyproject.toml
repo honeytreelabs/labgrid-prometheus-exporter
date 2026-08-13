@@ -7,7 +7,7 @@ name = "labgrid-prometheus-exporter"
 version = "0.1.0"
 description = "Prometheus exporter for labgrid. Install with the extra matching your coordinator's labgrid version, e.g. labgrid-prometheus-exporter[grpc]."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13,<3.14"
 license = { text = "MIT" }
 dependencies = [
     "labgrid-toolkit-core",

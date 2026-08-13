@@ -7,7 +7,7 @@
 *Tools and reusable packages for the labgrid embedded-testing framework.*
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python 3.13+](https://img.shields.io/badge/Python-3.13%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
+[![Python 3.13](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![uv](https://img.shields.io/badge/uv-supported-DE5FE9)](https://docs.astral.sh/uv/)
 [![Last commit](https://img.shields.io/github/last-commit/honeytreelabs/labgrid-prometheus-exporter?logo=github)](https://github.com/honeytreelabs/labgrid-prometheus-exporter/commits/main)
 
